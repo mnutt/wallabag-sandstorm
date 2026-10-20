@@ -1,0 +1,9 @@
+--- a/src/Wallabag/CoreBundle/Resources/views/base.html.twig
++++ b/src/Wallabag/CoreBundle/Resources/views/base.html.twig
+@@ -80,5 +80,6 @@
+         {% endif %}
+         <script src="{{ asset('powerbox-http-proxy.js') }}"></script>
+         <script src="{{ asset('sandstorm.js') }}"></script>
++        <script src="{{ asset('warm.js') }}"></script>
+     </body>
+ </html>

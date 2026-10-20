@@ -1,0 +1,8 @@
+.codex/skills/sandstorm-app-author/
+.claude/skills/sandstorm-app-author/
+
+/build/
+/dist/
+*.spk
+
+/.sandstorm/caches/

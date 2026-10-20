@@ -1,0 +1,78 @@
+--- a/app/AppKernel.php
++++ b/app/AppKernel.php
+@@ -64,7 +64,7 @@
+ 
+     public function getCacheDir()
+     {
+-        return dirname(__DIR__) . '/var/cache/' . $this->getEnvironment();
++        return '/opt/app/build/wallabag-cache/' . $this->getEnvironment();
+     }
+ 
+     public function getLogDir()
+--- a/app/config/config_prod.yml
++++ b/app/config/config_prod.yml
+@@ -2,8 +2,28 @@
+     - { resource: config.yml }
+ 
+ framework:
++    cache:
++        # Per-request application caches avoid persistent copies of derivable data.
++        app: cache.adapter.array
++        system: cache.adapter.array
+     assets:
+         # json_manifest_path: '%kernel.project_dir%/web/bundles/wallabagcore/manifest.json'
++
++jms_serializer:
++    metadata:
++        file_cache:
++            dir: /var/lib/wallabag/runtime/cache/jms_serializer
++
++bazinga_hateoas:
++    metadata:
++        file_cache:
++            dir: /var/lib/wallabag/runtime/cache/hateoas
++
++kphoen_rulerz:
++    cache: /var/lib/wallabag/runtime/cache/rulerz
++
++fos_rest:
++    cache_dir: /var/lib/wallabag/runtime/cache/fos_rest
+ 
+ #doctrine:
+ #    orm:
+--- a/app/config/services.yml
++++ b/app/config/services.yml
+@@ -22,7 +22,7 @@
+             $fetchingErrorMessage: '%wallabag_core.fetching_error_message%'
+             $languages: '%wallabag_core.languages%'
+             $lifeTime: '%wallabag_core.cache_lifetime%'
+-            $cookieFile: "%kernel.cache_dir%/cookiejar.json"
++            $cookieFile: "/var/lib/wallabag/runtime/cookiejar.json"
+             $logoPath: 'web/img/appicon/apple-touch-icon-152.png'
+             $registrationEnabled: '%fosuser_registration%'
+             $restrictedAccess: '@=service(''craue_config'').get(''restricted_access'')'
+@@ -197,12 +197,8 @@
+             - { name: kernel.event_listener, event: security.interactive_login, method: onInteractiveLogin }
+ 
+     craue_config_cache_provider:
+-        class: Symfony\Component\Cache\Adapter\FilesystemAdapter
++        class: Symfony\Component\Cache\Adapter\ArrayAdapter
+         public: false
+-        arguments:
+-            $namespace: 'craue_config'
+-            $defaultLifetime: 0
+-            $directory: '%kernel.cache_dir%'
+ 
+     Wallabag\CoreBundle\ParamConverter\UsernameFeedTokenConverter:
+         tags:
+--- a/vendor/friendsofsymfony/jsrouting-bundle/Resources/config/services.xml
++++ b/vendor/friendsofsymfony/jsrouting-bundle/Resources/config/services.xml
+@@ -11,7 +11,7 @@
+         <service id="fos_js_routing.extractor" class="%fos_js_routing.extractor.class%" public="true">
+             <argument type="service" id="fos_js_routing.router" />
+             <argument></argument>
+-            <argument>%kernel.cache_dir%</argument>
++            <argument>/var/lib/wallabag/runtime/cache</argument>
+             <argument>%kernel.bundles%</argument>
+         </service>
+ 

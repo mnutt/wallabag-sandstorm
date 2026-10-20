@@ -1,0 +1,6 @@
+WALLABAG_VERSION=2.6.14
+WALLABAG_URL=https://github.com/wallabag/wallabag/releases/download/2.6.14/wallabag-2.6.14.tar.gz
+WALLABAG_SHA256=0049345aec597dace8e2be2c85c2b8e7744217fe15fd5303bcab3811719eff0d
+PROXY_COMMIT=6e69c2e2895db88df8e848e2f159481bcb700426
+PROXY_URL=https://codeload.github.com/sandstorm-org/powerbox-http-proxy/tar.gz/6e69c2e2895db88df8e848e2f159481bcb700426
+PROXY_SHA256=11dcdbbe793bfa45080234f00ec2c96a67107bb4beb787545e0d80c2b02017e3

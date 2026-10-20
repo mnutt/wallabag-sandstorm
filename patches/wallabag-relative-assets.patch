@@ -1,0 +1,11 @@
+--- a/app/AppKernel.php
++++ b/app/AppKernel.php
+@@ -86,7 +86,7 @@
+             } else {
+                 $container->loadFromExtension('framework', [
+                     'assets' => [
+-                        'base_url' => $container->getParameter('domain_name'),
++                        'base_path' => '',
+                     ],
+                 ]);
+             }

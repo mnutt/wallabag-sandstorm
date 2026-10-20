@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Wallabagger for Sandstorm</title>
+<link rel="stylesheet" href="sandstorm-options.css">
+<main><h1>Wallabagger for Sandstorm</h1>
+<p>In your wallabag grain, open Sandstorm’s key icon and create an API token with Library access. Paste the resulting webkey here. It grants full access to this library; you can revoke it in Sandstorm.</p>
+<form id="connect">
+<label>Sandstorm API webkey <input id="webkey" type="password" required autocomplete="off" placeholder="https://api-….example.org/#token"></label>
+<label>Library address <input id="grain" type="url" required placeholder="https://sandstorm.example.org/grain/…"></label>
+<p>Use the library address from your browser’s address bar. Article links will open there.</p>
+<button>Connect</button>
+</form><p id="status" role="status"></p>
+<p>To save, open an article and click Wallabagger, or press Alt+Shift+W. It sends the page content you can currently see, including articles you are signed in to read. Linked images are not downloaded. For link context menus, open the link in a tab first.</p>
+</main><script type="module" src="js/sandstorm-options.js"></script></html>

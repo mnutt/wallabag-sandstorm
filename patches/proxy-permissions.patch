@@ -1,0 +1,11 @@
+--- a/server.go
++++ b/server.go
+@@ -251,7 +251,7 @@
+ 		RequiredPermissions []string `json:"requiredPermissions"`
+ 	}
+ 	body.RequestToken = res.ClaimToken
+-	body.RequiredPermissions = []string{}
++	body.RequiredPermissions = []string{"access"}
+ 	bodyText, err := json.Marshal(&body)
+ 	if err != nil {
+ 		return "", err

@@ -1,0 +1,217 @@
+--- a/wallabagger/js/wallabag-api.js
++++ b/wallabagger/js/wallabag-api.js
+@@ -7,6 +7,8 @@
+ class WallabagApi {
+     defaultValues = {
+         Url: null,
++        GrainUrl: null,
++        Sandstorm: false,
+         ApiVersion: null,
+         ClientId: null,
+         ClientSecret: null,
+@@ -48,7 +50,7 @@
+     }
+ 
+     async forceInit () {
+-        if (!this.data.ClientId) {
++        if (!this.checkParams()) {
+             await this.init();
+         }
+     }
+@@ -77,6 +79,7 @@
+     }
+ 
+     checkParams () {
++        if (this.data.Sandstorm) return Boolean(this.data.Url && this.data.ApiToken);
+         return ((this.data.ClientId !== null) &&
+                  (this.data.ClientSecret !== null) &&
+                  (this.data.UserLogin !== null) &&
+@@ -89,7 +92,7 @@
+ 
+     // @TODO rename method to avoid conflict with data.isTokenExpired
+     #isTokenExpired () {
+-        return Date.now() > this.data.ExpireDate;
++        return !this.data.Sandstorm && Date.now() > this.data.ExpireDate;
+     }
+ 
+     clear () {
+@@ -109,7 +112,7 @@
+ 
+     checkUrl () {
+         const url_ = this.data.Url + '/api/version';
+-        return this.#fetchApi.get(url_, '')
++        return this.#fetchApi.get(url_, this.data.Sandstorm ? this.data.ApiToken : '')
+             .then(fetchData => {
+                 this.data.ApiVersion = fetchData;
+                 this.#setAllowExistSafe();
+@@ -208,6 +211,9 @@
+     }
+ 
+     savePage (options) {
++        if (this.data.Sandstorm && !options.content) {
++            return Promise.reject(new Error('Open the article in a browser tab, then save it using Wallabagger. Sandstorm requires browser-captured content.'));
++        }
+         const content = {
+             url: options.url,
+             origin_url: options.origin_url
+@@ -222,6 +228,7 @@
+             this.#logger.log('has local content', options.content);
+             content.content = options.content;
+         }
++        if (this.data.Sandstorm) content.sandstorm_capture = true;
+         const entriesUrl = `${this.data.Url}/api/entries.json`;
+         return this.#checkToken().then(() =>
+             this.#fetchApi.post(entriesUrl, this.data.ApiToken, content)
+@@ -233,6 +240,7 @@
+     }
+ 
+     passwordToken () {
++        if (this.data.Sandstorm) return Promise.reject(new Error('Reconnect with a new Sandstorm API token in extension settings.'));
+         const content = {
+             grant_type: 'password',
+             client_id: this.data.ClientId,
+--- a/wallabagger/js/background.js
++++ b/wallabagger/js/background.js
+@@ -23,7 +23,7 @@
+ 
+ const savePage = new SavePage(browser, logger, browserUtils, savePageToWallabag, fetchLocally);
+ 
+-const wallabaggerAddLinkContexts = ['link', 'page'];
++const wallabaggerAddLinkContexts = ['page'];
+ if (!globalThis.wallabaggerBrowser) {
+     wallabaggerAddLinkContexts.push('tab');
+ }
+@@ -74,7 +74,7 @@
+                 case 'archive':
+                 case 'all':
+                 case 'tag':
+-                    api.checkParams() && browser.tabs.create({ url: `${api.data.Url}/${info.menuItemId}/list` });
++                    api.checkParams() && browser.tabs.create({ url: `${api.data.GrainUrl || api.data.Url}/${info.menuItemId}/list` });
+                     break;
+             }
+         });
+@@ -88,8 +88,8 @@
+                     if (tabs[0] != null) {
+                         savePage.handle(
+                             {
+-                                type: 'url',
+-                                url: tabs[0].url,
++                                type: 'tab',
++                                tab: tabs[0],
+                                 resetIcon: false
+                             }
+                         );
+@@ -229,7 +229,7 @@
+     }
+ }
+ async function savePageToWallabag (tabUrl, resetIcon, title, content, proxifiedUrl) {
+-    if (browserUtils.isServicePage(tabUrl, api.data.Url)) {
++    if (browserUtils.isServicePage(tabUrl, api.data.GrainUrl || api.data.Url)) {
+         return;
+     }
+ 
+@@ -277,7 +277,7 @@
+         logger.log('set locally fetched', { title, content });
+         savePageOptions.title = title;
+         savePageOptions.content = content;
+-        console.log(savePageOptions);
++
+     }
+ 
+     const promise = api.savePage(savePageOptions);
+@@ -305,7 +305,7 @@
+         .catch(error => {
+             browserIcon.setTimed('bad');
+             existingUrl.saveExistFlag(url, existingUrl.states.notexists);
+-            postIfConnected({ response: 'error', error: { message: Common.translate('Save_Error') } });
++            postIfConnected({ response: 'error', error: { message: error.message || Common.translate('Save_Error') } });
+             throw error;
+         });
+ };
+@@ -372,6 +372,9 @@
+                 openOptionsPage();
+                 break;
+             case 'setup-save':
++                cache.clearAll();
++                dirtyCache.clearAll();
++                existingUrl.cache.clearAll();
+                 api.saveParams(msg.data);
+                 postIfConnected({ response: 'setup-save', data: api.data });
+                 existingUrl.addListeners(msg.data.AllowExistCheck);
+--- a/wallabagger/js/utils/cache.js
++++ b/wallabagger/js/utils/cache.js
+@@ -15,6 +15,10 @@
+         if (this.#enabled) {
+             this.#cache[this.#str(key)] = data;
+         }
++    }
++
++    clearAll () {
++        this.#cache = [];
+     }
+ 
+     clear (key) {
+--- a/wallabagger/js/browser-content-fetch/browser-content-fetch.js
++++ b/wallabagger/js/browser-content-fetch/browser-content-fetch.js
+@@ -50,7 +50,8 @@
+ 
+         const isToFetchLocally = isEuropresse || (!this.#browserUtils.isRestrictedPage(tab.url) && await this.#fetchLocally.isSiteToFetchLocally(tab.url));
+         if (isToFetchLocally) {
+-            browser.scripting.executeScript({
++            try {
++                await browser.scripting.executeScript({
+                 target: { tabId: tab.id },
+                 func: (selectors) => {
+                     // Use of chrome here instead of browser
+@@ -69,8 +70,13 @@
+                     chrome.runtime.sendMessage(result);
+                 },
+                 args: [isEuropresse ? this.#europresse.getPageSelectors() : null]
+-            });
++                });
++            } catch (error) {
++                this.#browser.runtime.onMessage.removeListener(listener);
++                savePageToWallabag(tab.url, false);
++            }
+         } else {
++            this.#browser.runtime.onMessage.removeListener(listener);
+             savePageToWallabag(tab.url, false);
+         }
+     }
+--- a/wallabagger/js/popup.js
++++ b/wallabagger/js/popup.js
+@@ -540,7 +540,7 @@
+             case 'setup':
+                 this.#AllowSpaceInTags = msg.data.AllowSpaceInTags || 0;
+                 this.#AutoAddSingleTag = msg.data.AutoAddSingleTag || 0;
+-                this.#apiUrl = msg.data.Url;
++                this.#apiUrl = msg.data.GrainUrl || msg.data.Url;
+                 this.#port.postMessage({ request: 'tags' });
+                 this.#displaySavePage();
+                 break;
+--- a/wallabagger/js/fetch-api.js
++++ b/wallabagger/js/fetch-api.js
+@@ -7,7 +7,8 @@
+             headers: this.#getHeaders(token),
+             mode: 'cors',
+             cache: 'default',
+-            credentials: 'omit'
++            credentials: 'omit',
++            redirect: 'error'
+         };
+         if (content !== '') {
+             options = Object.assign(options, { body: JSON.stringify(content) });
+@@ -44,7 +45,12 @@
+ 
+     #fetch (url, method, token, content) {
+         const options = this.#getRequestOptions(method, token, content);
+-        return fetch(url, options).then(response => response.ok ? response.json() : response.json().then(err => Promise.reject(err)));
++        return fetch(url, options).then(async response => {
++            if (response.ok) return response.json();
++            let detail;
++            try { detail = await response.json(); } catch (_) { /* Sandstorm may return plain text. */ }
++            throw new Error(detail?.message || `HTTP ${response.status}: check the API token and library permissions in extension settings.`);
++        });
+     }
+ };
+ 

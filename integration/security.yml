@@ -1,0 +1,25 @@
+security:
+    encoders:
+        FOS\UserBundle\Model\UserInterface: sha512
+    providers:
+        library:
+            entity:
+                class: 'Wallabag\UserBundle\Entity\User'
+                property: username
+    firewalls:
+        secured_area:
+            pattern: ^/
+            stateless: true
+            provider: library
+            guard:
+                authenticators: [sandstorm.authenticator]
+    access_control:
+        # The library's grid/list control lives under /config, but is not account management.
+        - { path: '^/config/view-mode$', methods: [POST], roles: ROLE_USER }
+        # Keep the account lifecycle and public publishing out of the grain.
+        - { path: '^/(login|logout|register|resetting|2fa|users|settings|config|developer|oauth|share|feed)(/|$)', roles: ROLE_DISABLED }
+        - { path: '^/', roles: ROLE_USER }
+
+services:
+    sandstorm.authenticator:
+        class: Sandstorm\SandstormAuthenticator

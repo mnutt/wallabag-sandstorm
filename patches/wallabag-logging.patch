@@ -1,0 +1,19 @@
+--- a/app/config/config_prod.yml
++++ b/app/config/config_prod.yml
+@@ -14,13 +14,10 @@
+ monolog:
+     handlers:
+         main:
+-            type: fingers_crossed
+-            action_level: error
+-            handler: nested
+-        nested:
+-            type: stream
++            type: rotating_file
+             path: "%kernel.logs_dir%/%kernel.environment%.log"
+-            level: debug
++            level: warning
++            max_files: 3
+         console:
+             type: console
+ 

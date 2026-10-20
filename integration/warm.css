@@ -1,0 +1,342 @@
+/*
+ * Warm — a local, dependency-free skin for wallabag 2.6's Material templates.
+ * Loaded through upstream's custom.css hook, after material.css.
+ * :root specificity also overrides upstream's .dark-theme rules.
+ */
+:root {
+  --paper: #faf8f4;
+  --linen: #eae5dc;
+  --ink: #292923;
+  --muted: #66695e;
+  --sage: #73776a;
+  --clay: #a66d51;
+  --link: #875136;
+  --rule: #d8d2c7;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+:root.dark-theme {
+  --paper: #24241f;
+  --linen: #30312a;
+  --ink: #eee9df;
+  --muted: #b7b8aa;
+  --sage: #a8b09a;
+  --clay: #cf9a79;
+  --link: #dfac8c;
+  --rule: #48483d;
+  color-scheme: dark;
+}
+:root body { background: var(--paper); color: var(--ink); font-family: var(--sans); }
+:root #content, :root .results-item { color: var(--ink); }
+:root a { color: var(--link); }
+:root a, :root button, :root input { -webkit-tap-highlight-color: transparent; }
+:root :focus-visible { outline: 2px solid var(--clay); outline-offset: 4px; }
+:root ::selection { background: var(--linen); color: var(--ink); }
+:root h1, :root h2, :root h3, :root h4 {
+  font-family: var(--sans); font-weight: 400; letter-spacing: -.025em;
+}
+:root .cyan, :root .cyan.darken-1, :root .cyan.darken-2 {
+  background-color: var(--paper) !important; color: var(--ink);
+}
+:root .grey-text, :root .grey-text.text-lighten-4 { color: var(--muted) !important; }
+:root .grey-text.text-darken-4 { color: var(--ink) !important; }
+:root nav, :root .side-nav, :root .card, :root .card-panel,
+:root .collapsible, :root .dropdown-content, :root .btn, :root .btn-floating,
+:root #article, :root .z-depth-1, :root .z-depth-2 { box-shadow: none; }
+:root .waves-ripple { display: none !important; }
+
+/* A quiet rail with the original wallabag logo. */
+:root .side-nav { background: var(--paper); border-right: 1px solid var(--rule); }
+:root .side-nav li > a, :root .side-nav li button,
+:root .side-nav li > a > i.material-icons, :root .side-nav li button > i.material-icons {
+  color: var(--ink); font-weight: 400;
+}
+:root .side-nav li.active { background: var(--linen); box-shadow: inset 3px 0 var(--clay); }
+:root .side-nav li:not(.logo) > a:hover, :root .side-nav li:not(.logo) button:hover,
+:root .side-nav .collapsible-header:hover { background: var(--linen); }
+:root .side-nav .collapsible-body, :root .side-nav.fixed .collapsible-body { background: var(--paper); }
+:root .border-bottom, :root .collapsible, :root .collapsible-body,
+:root .collapsible-header { border-color: var(--rule); }
+:root #main .logo a { height: 112px; display: flex; align-items: center; justify-content: center; }
+:root #main .logo img { display: block; width: 80px; height: 80px; }
+:root .items-number { font-size: 12px; font-variant-numeric: tabular-nums; }
+:root nav { border-bottom: 1px solid var(--rule); }
+:root .nav-panel-actions { padding: 25px 28px; gap: 12px; }
+:root .nav-panel-top { flex: 1; }
+:root .nav-panel-buttom { flex-grow: 0; }
+:root .toggle-add-url-container { flex-grow: 0; }
+:root .toggle-add-url { width: auto; }
+:root .nav-panels .action { font: 28px/1.2 var(--sans); letter-spacing: -.035em; }
+:root nav a, :root nav button, :root .nav-panel-item .add,
+:root .nav-panel-item .search, :root .nav-panels .close { color: var(--ink) !important; }
+:root .nav-panel-item a, :root .nav-panel-item button { border-radius: 3px; }
+:root .nav-panel-item a:hover, :root .nav-panel-item button:hover { background: var(--linen); }
+:root button, :root .btn, :root .btn-large, :root .btn-flat,
+:root nav a, :root .side-nav a, :root .dropdown-content li { transition: none; }
+:root .nav-panel-add, :root .nav-panel-search { background: var(--linen); }
+:root .dropdown-content { border: 1px solid var(--rule); background: var(--paper); }
+:root .dropdown-content li { background: var(--paper); }
+:root .dropdown-content li > a, :root .dropdown-content li > span { color: var(--ink); font-size: 14px; }
+:root .dropdown-content li > a > i { margin-right: 8px; }
+:root .dropdown-content li:hover, :root .dropdown-content li.active,
+:root .dropdown-content li.selected { background: var(--linen); }
+:root .divider { background-color: var(--rule); }
+:root .divider + .divider, :root .dropdown-content > .divider:last-child { display: none; }
+
+/* Unboxed editorial entries: images, generous titles, metadata and a fine rule. */
+:root .index main div#content { padding: 12px 28px 40px; }
+:root .results { padding: 16px 0 24px; font-size: 13px; color: var(--muted); }
+:root .nb-results { align-items: center; gap: 12px; }
+:root .entries-row { padding: 0; gap: 36px 28px; }
+:root .entries-row > li { min-width: 0; }
+:root .card, :root .card:hover, :root .card-panel,
+:root .card .card-reveal, :root .collection, :root .collection .collection-item {
+  background: var(--paper); color: var(--ink); border-radius: 0;
+}
+:root .entry-card { border-bottom: 1px solid var(--rule); }
+:root .card .card-content { padding: 22px 0 18px; }
+:root .card .card-content .card-title, :root .card .card-reveal .card-title {
+  font-family: var(--sans); font-size: 20px; font-weight: 400;
+  line-height: 1.35; max-height: none; letter-spacing: -.015em;
+}
+:root .card .card-title a, :root .card a.card-title { color: var(--ink); }
+:root .card .card-title a:hover, :root .card a.card-title:hover { color: var(--link); }
+:root .card .card-content .original { font: 12px/1.8 var(--sans); color: var(--muted); margin-top: 10px; }
+:root .card .card-image { height: 12em; }
+:root .card .preview, :root .card-stacked .preview { background-color: var(--linen); border-radius: 0; }
+:root .card .preview.preview--default { background-image: none !important; filter: none; position: relative; }
+:root .preview--default::after {
+  content: "w."; position: absolute; inset: 0; display: grid; place-items: center;
+  font: italic 42px var(--serif); color: var(--sage);
+}
+:root .card .card-action { padding: 12px 0; border-top: 1px solid var(--rule); background: transparent !important; }
+:root .card .card-action {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+}
+:root .card .card-action .tools { float: none !important; margin: 0 0 0 auto; align-items: center; }
+/* Links and buttons inside forms must share a center, not inline baselines. */
+:root .card-action .tools li, :root .card-action .tools form,
+:root .card-stacked .tools-list li, :root .card-stacked .tools-list form {
+  display: flex; align-items: center;
+}
+:root .card-stacked .tools-list li { gap: 8px; }
+:root .card-action .tool, :root .card-stacked .tools-list .tool {
+  display: inline-flex; align-items: center; justify-content: center; line-height: 1;
+}
+:root .card-action .material-icons, :root .card-stacked .tools-list .material-icons {
+  display: inline-flex; align-items: center; justify-content: center;
+}
+:root .card-action .reading-time,
+:root .card-action .card-reading-time, :root .card-action .card-created-at { align-items: center; }
+:root .card .card-action a, :root .card .card-action a:hover { color: var(--ink); }
+:root .reading-time { color: var(--muted); font-size: 12px; }
+:root .collection { border: 0; margin: 0; }
+:root .collection .collection-item { border-bottom: 1px solid var(--rule); padding: 10px 0; width: 100%; }
+/* Extend the row background into the gutter without shifting its contents. */
+:root .entries.collection { margin-inline: -10px; }
+:root .entries.collection .collection-item { padding-inline: 10px; }
+:root #content .collection .collection-item { min-height: 0; }
+:root .collection .collection-item:hover { background: var(--linen); }
+:root .card-stacked .card-preview {
+  flex: 0 0 56px; max-width: 56px; height: 40px; max-height: 40px; margin-right: 0;
+}
+:root .card-stacked div.card-content { padding: 0 10px; min-width: 0; }
+:root .card-stacked .card-content .card-title {
+  display: block; font: 16px/1.35 var(--sans); letter-spacing: 0; color: var(--ink);
+}
+:root .card-stacked div.metadata { font-size: 12px; line-height: 1.5; height: auto; margin-top: 3px; }
+:root .card-stacked .card-title a { color: var(--ink); }
+:root .card-stacked .card-content .original { color: var(--muted); font-size: 12px; }
+:root .card-stacked ul.tools-list { display: inline; }
+:root .card.archived, :root .card-stacked.archived { opacity: .75; }
+:root .chip, :root .card-entry-labels li, :root .card-tag-labels li,
+:root .card .card-entry-labels-hidden li, :root .card-stacked div.metadata .chip,
+:root #article .entry-info .chip-label, :root #article .entry-info .chip-action {
+  background: var(--linen); color: var(--ink); border-radius: 2px;
+}
+:root .chip a, :root .chip i, :root .card-entry-labels a, :root .card-tag-labels a,
+:root .card-tag-labels button, :root .card-entry-labels-hidden a,
+:root #list .chip a, :root #article .entry-info .chip a,
+:root #article .entry-info .chip i { color: var(--ink); }
+:root .card-stacked div.metadata .chip a,
+:root .card-stacked div.metadata .chip i { color: var(--ink); }
+:root .card-entry-labels li { border-radius: 0 2px 2px 0; }
+:root #article .entry-info .chip { align-items: stretch; }
+:root #article .entry-info .chip > form { display: flex; height: 100%; margin: 0; }
+:root #article .entry-info .chip-label,
+:root #article .entry-info .chip-action {
+  display: inline-flex; align-items: center; justify-content: center; height: 100%; line-height: 1;
+}
+:root #article .entry-info .chip-label { border-radius: 2px 0 0 2px; }
+:root #article .entry-info .chip-action { border-radius: 0 2px 2px 0; }
+:root #article .entry-info .chip-action .material-icons {
+  display: inline-flex; align-items: center; justify-content: center; height: 20px; line-height: 1;
+}
+
+/* Controls keep their original behavior, without elevation or shouting labels. */
+:root .btn, :root .btn-large, :root .btn-flat, :root .btn-floating {
+  background: var(--linen) !important; color: var(--ink) !important;
+  border: 1px solid var(--rule); border-radius: 2px;
+  text-transform: none; letter-spacing: 0; box-shadow: none;
+}
+:root .btn:hover, :root .btn-large:hover, :root .btn-flat:hover { border-color: var(--sage); box-shadow: none; }
+:root .btn-floating i { color: inherit; }
+:root .btn:disabled, :root button:disabled { opacity: .5; cursor: not-allowed; }
+:root input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+:root textarea, :root select {
+  color: var(--ink); border-color: var(--rule); box-shadow: none; accent-color: var(--sage);
+}
+:root input:focus:not([readonly]), :root textarea:focus:not([readonly]) {
+  border-color: var(--sage) !important; box-shadow: 0 1px 0 var(--sage) !important;
+}
+:root input::placeholder, :root textarea::placeholder, :root label { color: var(--muted); }
+:root .select-wrapper span.caret { color: var(--muted); }
+:root div.input-field:not(.nav-panel-item):not(.with-checkbox) {
+  display: flex; flex-direction: column;
+}
+:root div.input-field:not(.nav-panel-item):not(.with-checkbox) > label {
+  position: static; transform: none; order: -1; margin-bottom: 6px;
+}
+:root .input-field:not(.nav-panel-item) input:not([type="checkbox"]):not([type="radio"]),
+:root textarea.materialize-textarea {
+  box-sizing: border-box; border: 1px solid var(--rule); border-radius: 2px;
+  background: var(--paper); padding: 0 10px;
+}
+:root .nav-panels .nav-panel-add input[type="url"],
+:root .nav-panels .nav-panel-add input[type="url"]:focus,
+:root .nav-panels .nav-panel-search input[type="text"],
+:root .nav-panels .nav-panel-search input[type="text"]:focus {
+  box-sizing: border-box; min-width: 0; padding: 0 12px;
+  border: 1px solid var(--rule); border-radius: 2px;
+  background: var(--paper); box-shadow: none !important;
+}
+:root .input-field label.active, :root .input-field input:focus + label { color: var(--muted); }
+:root [type="checkbox"]:checked + label::before { border-right-color: var(--sage); border-bottom-color: var(--sage); }
+:root input[type="checkbox"], :root input[type="radio"] { accent-color: var(--sage); }
+:root .card .entry-checkbox { background: color-mix(in srgb, var(--sage) 20%, transparent); }
+:root .tabs, :root .collapsible-header, :root .modal, :root .modal .modal-footer { background: var(--paper); color: var(--ink); }
+:root .tabs .tab a { color: var(--muted); text-transform: none; }
+:root .tabs .tab a.active { color: var(--ink); }
+:root .tabs .indicator, :root .progress .determinate { background: var(--sage); }
+:root .progress { background: var(--linen); }
+:root .pagination li.active { background: var(--linen); border-bottom: 2px solid var(--clay); border-radius: 0; }
+:root .pagination li.active span, :root .pagination li a { color: var(--ink); }
+:root .pagination li:not(.active) a:hover { background: var(--linen); }
+:root .toast, :root .material-tooltip { background: var(--ink); color: var(--paper); border-radius: 2px; box-shadow: none; }
+:root .material-tooltip {
+  /* Materialize uses JS-driven inline opacity/transforms, not CSS transitions.
+   * Keep its positioning, visibility and hover delay, but suppress the motion. */
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
+}
+:root .material-tooltip .backdrop { display: none; }
+:root .backdrop { background: var(--ink); }
+:root footer.page-footer { border-top: 1px solid var(--rule); }
+:root footer .footer-copyright {
+  background: transparent; color: var(--muted); font-size: 12px; padding: 16px 28px;
+}
+:root footer .container { width: 100%; max-width: none; margin: 0; padding: 0; }
+:root footer .row { display: flex; align-items: center; gap: 24px; margin: 0; }
+:root footer .row::after { display: none; }
+:root footer .row > .col {
+  flex: 0 0 auto; float: none; width: auto !important; margin: 0; padding: 0; white-space: nowrap;
+}
+:root footer .row > .col:first-child { text-align: left; }
+:root footer .row > .col:last-child { margin-left: auto; text-align: right; }
+:root footer .footer-text { margin: 0; }
+/* Keep the row measurable while collapsed, so it can return when it fits. */
+:root footer.page-footer[data-warm-collapsed] {
+  height: 0; min-height: 0; margin-top: 0; border-top: 0; overflow: hidden; visibility: hidden;
+}
+
+/* The reader shares the same paper, without a raised sheet or a bright toolbar. */
+:root .reader-mode .collapsible-header {
+  display: flex; align-items: center; gap: 12px; padding-inline: 14px;
+}
+:root .reader-mode .collapsible-body a {
+  display: flex; align-items: center; gap: 12px;
+}
+:root .reader-mode .material-icons,
+:root .reader-mode .collapsible-body li a i.material-icons {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 20px; float: none; margin: 0; height: 20px; line-height: 1;
+}
+:root .entry .fixed-action-btn .btn-floating {
+  display: inline-flex; align-items: center; justify-content: center;
+}
+:root .entry .fixed-action-btn .btn-floating .material-icons {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; line-height: 1;
+}
+@media (min-width: 993px) {
+  :root .reader-mode:not(:hover) { width: 48px !important; }
+  :root .reader-mode:hover { width: 300px !important; }
+  :root .entry main div#content { padding-left: 48px; }
+  :root .reader-mode .collapsible-header {
+    /* The 48px rail has two 1px borders: reserve its inner width for the icon. */
+    display: grid; grid-template-columns: 46px minmax(0, 1fr);
+    gap: 0; padding-inline: 0 12px;
+  }
+  :root .reader-mode .collapsible-header > .material-icons { justify-self: center; }
+  :root .reader-mode .collapsible-header > span { white-space: nowrap; }
+  :root .reader-mode:not(:hover) .collapsible-header {
+    padding-inline: 0;
+  }
+  :root .reader-mode:not(:hover) .collapsible-header > span { display: none; }
+  /* Override Materialize's inline display on previously opened submenus. */
+  :root .reader-mode:not(:hover) .collapsible-body { display: none !important; }
+}
+:root #article { background: var(--paper); max-width: 42em; padding: 20px 40px 80px; }
+:root #article > header > h1 { font: 42px/1.15 var(--serif); letter-spacing: -.035em; }
+:root #article article { font-family: var(--serif); color: var(--ink); font-size: 20px; line-height: 1.8; }
+:root #article article :is(h1, h2, h3, h4, h5, h6) { color: var(--ink); font-family: var(--serif); line-height: 1.25; }
+:root #article article a { color: var(--link); border-bottom-color: var(--clay); }
+:root #article .entry-info .tools .stats a, :root #article .entry-info .tools .stats i.material-icons { color: var(--muted); }
+:root blockquote { border-left: 2px solid var(--clay); }
+:root #article pre, :root .hljs { background: var(--linen); color: var(--ink); border-color: var(--rule); border-radius: 0; }
+:root table.striped > tbody > tr:nth-child(odd) { background: var(--linen); }
+:root th, :root td { border-color: var(--rule); }
+:root .material-icons[data-warm-icon] {
+  font-size: 0 !important; width: 20px; min-width: 20px; min-height: 20px; vertical-align: middle;
+}
+:root .material-icons[data-warm-icon="star"] { color: var(--clay); }
+:root .picker__box, :root .picker__footer { background: var(--paper); border-color: var(--rule); color: var(--ink); }
+:root .picker__day--selected, :root .picker__day--selected:hover,
+:root .picker--focused .picker__day--selected { background: var(--linen); color: var(--ink); border-radius: 2px; }
+:root .picker__close, :root .picker__today, :root .picker__day--today { color: var(--link); }
+:root .material-icons[data-warm-icon]::before {
+  content: ""; display: inline-block; width: 20px; height: 20px;
+  background: currentColor; mask: var(--warm-icon) center / contain no-repeat;
+  vertical-align: middle;
+}
+@media (max-width: 992px) {
+  :root .nav-panel-actions { padding: 16px; }
+  :root .nav-panels .action { font-size: 24px; }
+  :root .index main div#content { padding: 8px 16px 28px; }
+  /* Avoid stacking the count's bottom margin with the results row's spacing. */
+  :root #content:has(> .entries.collection) > .results {
+    padding-bottom: 6px; margin-bottom: 0; row-gap: 8px;
+  }
+  :root #content:has(> .entries.collection) .nb-results { margin-bottom: 0; }
+  :root footer .footer-copyright { padding-inline: 16px; }
+  :root #article { padding: 12px 22px 80px; }
+  :root #article > header > h1 { font-size: 32px; }
+}
+@media (max-width: 600px) {
+  :root .entries-row { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  :root .nav-panel-buttom { width: 100%; }
+  :root .nav-panel-item a, :root .nav-panel-item button { padding: 10px; }
+  :root .card-stacked { row-gap: 6px; }
+  :root .card-stacked div.metadata { height: auto; flex-wrap: wrap; }
+  :root #article article { font-size: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root *, :root *::before, :root *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+@media print {
+  :root, :root.dark-theme { --paper: white; --ink: black; --muted: #444; --link: black; --linen: #eee; --rule: #ccc; color-scheme: light; }
+  :root #article { max-width: none; padding: 0; }
+}

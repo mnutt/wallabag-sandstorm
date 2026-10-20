@@ -1,0 +1,60 @@
+--- a/src/Wallabag/ApiBundle/Controller/EntryRestController.php
++++ b/src/Wallabag/ApiBundle/Controller/EntryRestController.php
+@@ -705,6 +705,11 @@
+     {
+         $this->validateAuthentication();
+ 
++        $capture = $request->request->getBoolean('sandstorm_capture');
++        if ($capture && !trim((string) $request->request->get('content'))) {
++            return new JsonResponse(['message' => 'Browser-captured content is required.'], 400);
++        }
++        $request->attributes->set('_sandstorm_capture', $capture);
+         $url = $request->request->get('url');
+ 
+         $entry = $entryRepository->findByUrlAndUserId(
+@@ -732,7 +737,8 @@
+                     // faking the open graph preview picture
+                     'image' => !empty($data['picture']) ? $data['picture'] : $entry->getPreviewPicture(),
+                     'authors' => \is_string($data['authors']) ? explode(',', $data['authors']) : $entry->getPublishedBy(),
+-                ]
++                ],
++                $capture
+             );
+         } catch (\Exception $e) {
+             $logger->error('Error while saving an entry', [
+@@ -911,6 +917,8 @@
+      */
+     public function patchEntriesAction(Entry $entry, Request $request, ContentProxy $contentProxy, LoggerInterface $logger, TagsAssigner $tagsAssigner, EventDispatcherInterface $eventDispatcher)
+     {
++        // Metadata edits must not trigger interactive image downloads.
++        $request->attributes->set('_sandstorm_capture', true);
+         $this->validateAuthentication();
+         $this->validateUserAccess($entry->getUser()->getId());
+ 
+--- a/src/Wallabag/CoreBundle/Event/Subscriber/DownloadImagesSubscriber.php
++++ b/src/Wallabag/CoreBundle/Event/Subscriber/DownloadImagesSubscriber.php
+@@ -16,9 +16,11 @@
+     private $downloadImages;
+     private $enabled;
+     private $logger;
++    private $requestStack;
+ 
+-    public function __construct(EntityManagerInterface $em, DownloadImages $downloadImages, $enabled, LoggerInterface $logger)
++    public function __construct(EntityManagerInterface $em, DownloadImages $downloadImages, $enabled, LoggerInterface $logger, \Symfony\Component\HttpFoundation\RequestStack $requestStack)
+     {
++        $this->requestStack = $requestStack;
+         $this->em = $em;
+         $this->downloadImages = $downloadImages;
+         $this->enabled = $enabled;
+@@ -38,6 +40,11 @@
+      */
+     public function onEntrySaved(EntrySavedEvent $event)
+     {
++        $request = $this->requestStack->getCurrentRequest();
++        if ($request && $request->attributes->get('_sandstorm_capture')) {
++            // Browser saves must not wait for an interactive outbound Powerbox grant.
++            return;
++        }
+         if (!$this->enabled) {
+             $this->logger->debug('DownloadImagesSubscriber: disabled.');
+ 

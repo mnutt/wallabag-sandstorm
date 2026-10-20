@@ -1,0 +1,22 @@
+{% extends '@WallabagCore/layout.html.twig' %}
+{% block title %}RSS subscriptions{% endblock %}
+{% block content %}
+<div class="row"><div class="col s12"><h1>RSS subscriptions</h1>
+<p>Subscribe from an RSS reader that supports HTTP Basic authentication. These credentials can read feeds but cannot edit articles or access the rest of the library.</p>
+<label for="feed-kind">Articles</label>
+<select id="feed-kind" class="browser-default">
+<option value="unread">Unread</option><option value="starred">Starred</option>
+<option value="archive">Archived</option><option value="all">All articles</option>
+</select>
+<label for="feed-tag">Tag (optional)</label>
+<select id="feed-tag" class="browser-default"><option value="">All tags</option>
+{% for tag in tags %}<option value="{{ tag.slug }}">{{ tag.label }}</option>{% endfor %}
+</select><br>
+<button id="feed-connect" class="btn">Create subscription credentials</button>
+<p id="feed-status" role="status"></p>
+<iframe id="feed-credentials" title="RSS subscription credentials" hidden style="width:100%;height:300px;border:1px solid #aaa"></iframe>
+<p>Copy the feed URL, username, and password into your reader. If it accepts credentials inside a URL, use the combined subscription URL. Fetch the feed within five minutes to activate the credentials. They continue working until revoked through Sandstorm’s Get Webkey menu.</p>
+<p>Feeds include the latest 50 articles with saved text and tags. Article links open the original website. Add <code>limit=100</code> to request up to 100 articles, or <code>page=2</code> for older entries. Stored images may not display in external readers. Clients without authenticated-feed support are not supported.</p>
+</div></div>
+<script src="{{ asset('sandstorm-feeds.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# When you change this file, you must take manual action. Read this doc:
+# - https://docs.sandstorm.io/en/latest/vagrant-spk/customizing/#setupsh
+
+set -euo pipefail
+
+export DEBIAN_FRONTEND=noninteractive
+apt-get update
+apt-get install -y nginx php-fpm php-sqlite3 php-cli php-curl git php-dev php-xml php-mbstring php-gd php-intl php-tidy php-zip ca-certificates unzip python3 golang-go sqlite3
+service nginx stop
+service php8.2-fpm stop
+systemctl disable nginx
+systemctl disable php8.2-fpm
+# patch /etc/php/8.2/fpm/pool.d/www.conf to not change uid/gid to www-data
+sed --in-place='' \
+        --expression='s/^listen.owner = www-data/;listen.owner = www-data/' \
+        --expression='s/^listen.group = www-data/;listen.group = www-data/' \
+        --expression='s/^user = www-data/;user = www-data/' \
+        --expression='s/^group = www-data/;group = www-data/' \
+        /etc/php/8.2/fpm/pool.d/www.conf
+# patch /etc/php/8.2/fpm/php-fpm.conf to not have a pidfile
+sed --in-place='' \
+        --expression='s/^pid =/;pid =/' \
+        /etc/php/8.2/fpm/php-fpm.conf
+# patch /etc/php/8.2/fpm/php-fpm.conf to place the sock file in /var
+sed --in-place='' \
+       --expression='s/^listen = \/run\/php\/php8.2-fpm.sock/listen = \/var\/run\/php\/php8.2-fpm.sock/' \
+       /etc/php/8.2/fpm/pool.d/www.conf
+# patch /etc/php/8.2/fpm/pool.d/www.conf to no clear environment variables
+# so we can pass in SANDSTORM=1 to apps
+sed --in-place='' \
+        --expression='s/^;clear_env = no/clear_env=no/' \
+        /etc/php/8.2/fpm/pool.d/www.conf
+# The capability proxy requires Go >= 1.22; bookworm's base compiler is 1.19.
+echo 'deb http://deb.debian.org/debian bookworm-backports main' > /etc/apt/sources.list.d/backports.list
+apt-get update
+apt-get install -y -t bookworm-backports golang-go

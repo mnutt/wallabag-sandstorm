@@ -1,0 +1,10 @@
+--- a/src/Wallabag/CoreBundle/Resources/views/base.html.twig
++++ b/src/Wallabag/CoreBundle/Resources/views/base.html.twig
+@@ -7,3 +7,6 @@
+-<html{% if lang is not empty %} class="{{ theme_class() }}" lang="{{ lang }}"{% endif %}>
++<html class="{{ app.request.cookies.get('theme') == 'dark' ? 'dark-theme' : '' }}"{% if lang is not empty %} lang="{{ lang }}"{% endif %}>
+     <head>
++        {% if app.request.attributes.has('_sandstorm_theme') %}
++            <meta name="sandstorm-theme-token" content="{{ csrf_token('sandstorm_theme') }}">
++        {% endif %}
+         {% block head %}

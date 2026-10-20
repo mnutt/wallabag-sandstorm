@@ -1,0 +1,18 @@
+--- a/pb-request.go
++++ b/pb-request.go
+@@ -156,7 +156,6 @@
+ 			conn.wsConn.Close()
+ 			delete(conns, index)
+ 		case req := <-makePbReq:
+-			log.Print("Got pb request: ", req)
+ 			req.PowerboxRequest.RpcId = nextRpcId
+ 			nextRpcId++
+ 
+@@ -176,7 +175,6 @@
+ 			}
+ 			outstandingReq = req
+ 		case resp := <-pbReplies:
+-			log.Print("Got response: ", resp)
+ 			if outstandingReq == nil || resp.RpcId != outstandingReq.PowerboxRequest.RpcId {
+ 				log.Print("Reply to stale/unknown rpc id: ", resp.RpcId)
+ 				continue

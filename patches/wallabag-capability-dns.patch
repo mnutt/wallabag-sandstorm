@@ -1,0 +1,13 @@
+--- a/vendor/j0k3r/graby/src/Extractor/HttpClient.php
++++ b/vendor/j0k3r/graby/src/Extractor/HttpClient.php
+@@ -92,7 +92,9 @@
+             new PluginClient(
+                 $client,
+                 [
+-                    new ServerSideRequestForgeryProtectionPlugin(),
++                    // Sandstorm resolves destinations and enforces capability grants.
++                    // Local DNS is unavailable inside the grain; all traffic uses
++                    // the explicit capability proxy configured by our client factory.
+                     new RedirectPlugin(),
+                     new Plugin\HistoryPlugin($this->responseHistory),
+                     new ErrorPlugin(),
