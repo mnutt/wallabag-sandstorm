@@ -12,5 +12,7 @@ $config['parameters'] = array_merge($config['parameters'], [
     'fosuser_registration' => false,
     'fosuser_confirmation' => false,
     'mailer_dsn' => 'null://null',
+    'redis_scheme' => 'unix',
+    'redis_path' => '/var/run/wallabag-redis.sock',
 ]);
 echo Yaml::dump($config, 4);

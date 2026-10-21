@@ -1,0 +1,40 @@
+# Target: wallabag 2.6.14
+# Purpose: Resume unfinished save events after worker interruption.
+--- a/src/Wallabag/ImportBundle/Consumer/AbstractConsumer.php
++++ b/src/Wallabag/ImportBundle/Consumer/AbstractConsumer.php
+@@ -59,7 +59,17 @@
+             return true;
+         }
+ 
+-        $entry = $this->import->parseEntry($storedEntry);
++        $state = null;
++        $entry = false;
++        if (getenv('SANDSTORM_IMPORT_JOB_KEY')) {
++            require_once '/opt/app/integration/SandstormImportState.php';
++            $state = new \SandstormImportState($this->em, getenv('SANDSTORM_IMPORT_JOB_KEY'));
++            $entry = $state->resume((int) $user->getId());
++            // A deleted unfinished entry must not be recreated by a retry.
++            if ($entry === null) return true;
++        }
++        $resuming = $entry !== false;
++        if (!$resuming) $entry = $this->import->parseEntry($storedEntry);
+ 
+         if (null === $entry) {
+             $this->logger->warning('Entry already exists', ['entry' => $storedEntry]);
+@@ -69,10 +79,15 @@
+         }
+ 
+         try {
+-            $this->em->flush();
++            if (!$resuming) {
++                if ($state) $state->save($entry, (int) $user->getId());
++                else $this->em->flush();
++            }
+ 
+             // entry saved, dispatch event about it!
+             $this->eventDispatcher->dispatch(new EntrySavedEvent($entry), EntrySavedEvent::NAME);
++
++            if ($state) $state->complete();
+ 
+             // clear only affected entities
+             $this->em->clear(Entry::class);

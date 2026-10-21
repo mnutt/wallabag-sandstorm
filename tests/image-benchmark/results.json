@@ -1,0 +1,542 @@
+[
+  {
+    "sample": "article.jpg",
+    "runtime": "GD",
+    "width": 1088,
+    "height": 726,
+    "first_ms": 6.11,
+    "median_ms": 3.12,
+    "p95_ms": 3.27,
+    "rss_kib": 43308,
+    "runs": [
+      {
+        "decoder": "GD",
+        "width": 1088,
+        "height": 726,
+        "bytes": 122697,
+        "first_ms": 6.187334,
+        "median_ms": 3.155267,
+        "p95_ms": 3.380916,
+        "rss_kib": 43068,
+        "process_ms": 128.6534179962473
+      },
+      {
+        "decoder": "GD",
+        "width": 1088,
+        "height": 726,
+        "bytes": 122697,
+        "first_ms": 5.57226,
+        "median_ms": 3.115764,
+        "p95_ms": 3.273056,
+        "rss_kib": 43384,
+        "process_ms": 127.38147399795707
+      },
+      {
+        "decoder": "GD",
+        "width": 1088,
+        "height": 726,
+        "bytes": 122697,
+        "first_ms": 6.109781,
+        "median_ms": 3.071621,
+        "p95_ms": 3.233342,
+        "rss_kib": 43308,
+        "process_ms": 129.4514719993458
+      }
+    ]
+  },
+  {
+    "sample": "article.jpg",
+    "runtime": "WASM",
+    "width": 1088,
+    "height": 726,
+    "first_ms": 17.48,
+    "median_ms": 5.43,
+    "p95_ms": 6.66,
+    "rss_kib": 110356,
+    "runs": [
+      {
+        "decoder": "jSquash WASM",
+        "width": 1088,
+        "height": 726,
+        "bytes": 122697,
+        "first_ms": 17.911743,
+        "median_ms": 5.411241000000018,
+        "p95_ms": 6.655766,
+        "rss_kib": 110356,
+        "process_ms": 250.67316200147616
+      },
+      {
+        "decoder": "jSquash WASM",
+        "width": 1088,
+        "height": 726,
+        "bytes": 122697,
+        "first_ms": 17.484348,
+        "median_ms": 5.765590000000003,
+        "p95_ms": 7.011406000000008,
+        "rss_kib": 108364,
+        "process_ms": 249.38572799874237
+      },
+      {
+        "decoder": "jSquash WASM",
+        "width": 1088,
+        "height": 726,
+        "bytes": 122697,
+        "first_ms": 17.362773999999998,
+        "median_ms": 5.43216000000001,
+        "p95_ms": 6.4828939999999875,
+        "rss_kib": 110512,
+        "process_ms": 244.76713100011693
+      }
+    ]
+  },
+  {
+    "sample": "article.avif",
+    "runtime": "GD",
+    "width": 1088,
+    "height": 726,
+    "first_ms": 9.97,
+    "median_ms": 5.45,
+    "p95_ms": 6.13,
+    "rss_kib": 55268,
+    "runs": [
+      {
+        "decoder": "GD",
+        "width": 1088,
+        "height": 726,
+        "bytes": 57034,
+        "first_ms": 9.970117,
+        "median_ms": 5.374532,
+        "p95_ms": 6.037977,
+        "rss_kib": 55336,
+        "process_ms": 230.57882900320692
+      },
+      {
+        "decoder": "GD",
+        "width": 1088,
+        "height": 726,
+        "bytes": 57034,
+        "first_ms": 10.162966,
+        "median_ms": 5.504415,
+        "p95_ms": 6.167207,
+        "rss_kib": 55268,
+        "process_ms": 238.3304329996463
+      },
+      {
+        "decoder": "GD",
+        "width": 1088,
+        "height": 726,
+        "bytes": 57034,
+        "first_ms": 9.870512,
+        "median_ms": 5.451006,
+        "p95_ms": 6.129687,
+        "rss_kib": 55064,
+        "process_ms": 237.01181200158317
+      }
+    ]
+  },
+  {
+    "sample": "article.avif",
+    "runtime": "WASM",
+    "width": 1088,
+    "height": 726,
+    "first_ms": 122.4,
+    "median_ms": 53.04,
+    "p95_ms": 54.1,
+    "rss_kib": 165288,
+    "runs": [
+      {
+        "decoder": "jSquash WASM",
+        "width": 1088,
+        "height": 726,
+        "bytes": 57034,
+        "first_ms": 109.16455199999999,
+        "median_ms": 53.043394999999975,
+        "p95_ms": 54.09639200000004,
+        "rss_kib": 151028,
+        "process_ms": 2015.055603995279
+      },
+      {
+        "decoder": "jSquash WASM",
+        "width": 1088,
+        "height": 726,
+        "bytes": 57034,
+        "first_ms": 126.312285,
+        "median_ms": 53.040299000000005,
+        "p95_ms": 54.102574000000004,
+        "rss_kib": 165288,
+        "process_ms": 2033.3506499955547
+      },
+      {
+        "decoder": "jSquash WASM",
+        "width": 1088,
+        "height": 726,
+        "bytes": 57034,
+        "first_ms": 122.400473,
+        "median_ms": 53.433299000000034,
+        "p95_ms": 54.22472099999999,
+        "rss_kib": 167692,
+        "process_ms": 2037.850155000342
+      }
+    ]
+  },
+  {
+    "sample": "2.2096w.jpg",
+    "runtime": "GD",
+    "width": 2096,
+    "height": 1398,
+    "first_ms": 20.78,
+    "median_ms": 14.56,
+    "p95_ms": 14.89,
+    "rss_kib": 59908,
+    "runs": [
+      {
+        "decoder": "GD",
+        "width": 2096,
+        "height": 1398,
+        "bytes": 593474,
+        "first_ms": 20.830321,
+        "median_ms": 14.545856,
+        "p95_ms": 14.88736,
+        "rss_kib": 59752,
+        "process_ms": 491.3612780001131
+      },
+      {
+        "decoder": "GD",
+        "width": 2096,
+        "height": 1398,
+        "bytes": 593474,
+        "first_ms": 20.784944,
+        "median_ms": 14.561695,
+        "p95_ms": 14.760314,
+        "rss_kib": 59908,
+        "process_ms": 490.29877300199587
+      },
+      {
+        "decoder": "GD",
+        "width": 2096,
+        "height": 1398,
+        "bytes": 593474,
+        "first_ms": 20.540411,
+        "median_ms": 14.575622,
+        "p95_ms": 14.903811,
+        "rss_kib": 59976,
+        "process_ms": 490.31762699451065
+      }
+    ]
+  },
+  {
+    "sample": "2.2096w.jpg",
+    "runtime": "WASM",
+    "width": 2096,
+    "height": 1398,
+    "first_ms": 37.63,
+    "median_ms": 24.11,
+    "p95_ms": 26.33,
+    "rss_kib": 156284,
+    "runs": [
+      {
+        "decoder": "jSquash WASM",
+        "width": 2096,
+        "height": 1398,
+        "bytes": 593474,
+        "first_ms": 37.498271,
+        "median_ms": 24.746082,
+        "p95_ms": 26.561285999999996,
+        "rss_kib": 165936,
+        "process_ms": 952.4579630015069
+      },
+      {
+        "decoder": "jSquash WASM",
+        "width": 2096,
+        "height": 1398,
+        "bytes": 593474,
+        "first_ms": 37.629867,
+        "median_ms": 23.99891200000002,
+        "p95_ms": 25.384918000000027,
+        "rss_kib": 156284,
+        "process_ms": 924.1120090009645
+      },
+      {
+        "decoder": "jSquash WASM",
+        "width": 2096,
+        "height": 1398,
+        "bytes": 593474,
+        "first_ms": 37.754598,
+        "median_ms": 24.10785400000003,
+        "p95_ms": 26.333762999999976,
+        "rss_kib": 131392,
+        "process_ms": 923.931202996755
+      }
+    ]
+  },
+  {
+    "sample": "2.2096w.avif",
+    "runtime": "GD",
+    "width": 2096,
+    "height": 1398,
+    "first_ms": 32.77,
+    "median_ms": 23.11,
+    "p95_ms": 24.14,
+    "rss_kib": 99856,
+    "runs": [
+      {
+        "decoder": "GD",
+        "width": 2096,
+        "height": 1398,
+        "bytes": 238438,
+        "first_ms": 33.10306,
+        "median_ms": 23.114708,
+        "p95_ms": 24.026694,
+        "rss_kib": 99720,
+        "process_ms": 881.8331380025484
+      },
+      {
+        "decoder": "GD",
+        "width": 2096,
+        "height": 1398,
+        "bytes": 238438,
+        "first_ms": 32.766022,
+        "median_ms": 23.059676,
+        "p95_ms": 24.142187,
+        "rss_kib": 99880,
+        "process_ms": 881.1666600013268
+      },
+      {
+        "decoder": "GD",
+        "width": 2096,
+        "height": 1398,
+        "bytes": 238438,
+        "first_ms": 31.642043,
+        "median_ms": 23.109217,
+        "p95_ms": 24.335737,
+        "rss_kib": 99856,
+        "process_ms": 881.9622099981643
+      }
+    ]
+  },
+  {
+    "sample": "2.2096w.avif",
+    "runtime": "WASM",
+    "width": 2096,
+    "height": 1398,
+    "first_ms": 307.64,
+    "median_ms": 208.14,
+    "p95_ms": 209.66,
+    "rss_kib": 230380,
+    "runs": [
+      {
+        "decoder": "jSquash WASM",
+        "width": 2096,
+        "height": 1398,
+        "bytes": 238438,
+        "first_ms": 308.057377,
+        "median_ms": 207.55395799999997,
+        "p95_ms": 209.65924199999995,
+        "rss_kib": 210424,
+        "process_ms": 7620.403982997232
+      },
+      {
+        "decoder": "jSquash WASM",
+        "width": 2096,
+        "height": 1398,
+        "bytes": 238438,
+        "first_ms": 307.637566,
+        "median_ms": 208.13985800000046,
+        "p95_ms": 209.31271900000002,
+        "rss_kib": 230380,
+        "process_ms": 7625.328370006173
+      },
+      {
+        "decoder": "jSquash WASM",
+        "width": 2096,
+        "height": 1398,
+        "bytes": 238438,
+        "first_ms": 294.437041,
+        "median_ms": 209.92395499999975,
+        "p95_ms": 211.73278800000026,
+        "rss_kib": 233756,
+        "process_ms": 7655.449984995357
+      }
+    ]
+  },
+  {
+    "sample": "13.1088w.jpg",
+    "runtime": "GD",
+    "width": 1088,
+    "height": 1632,
+    "first_ms": 9.08,
+    "median_ms": 8.33,
+    "p95_ms": 9.73,
+    "rss_kib": 51004,
+    "runs": [
+      {
+        "decoder": "GD",
+        "width": 1088,
+        "height": 1632,
+        "bytes": 350548,
+        "first_ms": 8.984966,
+        "median_ms": 8.333485,
+        "p95_ms": 10.428349,
+        "rss_kib": 50944,
+        "process_ms": 300.8101009982056
+      },
+      {
+        "decoder": "GD",
+        "width": 1088,
+        "height": 1632,
+        "bytes": 350548,
+        "first_ms": 9.469806,
+        "median_ms": 8.291968,
+        "p95_ms": 8.501968,
+        "rss_kib": 51340,
+        "process_ms": 291.6949620048399
+      },
+      {
+        "decoder": "GD",
+        "width": 1088,
+        "height": 1632,
+        "bytes": 350548,
+        "first_ms": 9.083068,
+        "median_ms": 8.55676,
+        "p95_ms": 9.725283,
+        "rss_kib": 51004,
+        "process_ms": 300.47323500184575
+      }
+    ]
+  },
+  {
+    "sample": "13.1088w.jpg",
+    "runtime": "WASM",
+    "width": 1088,
+    "height": 1632,
+    "first_ms": 26.46,
+    "median_ms": 14.7,
+    "p95_ms": 15.77,
+    "rss_kib": 120536,
+    "runs": [
+      {
+        "decoder": "jSquash WASM",
+        "width": 1088,
+        "height": 1632,
+        "bytes": 350548,
+        "first_ms": 27.029487000000003,
+        "median_ms": 14.698860000000082,
+        "p95_ms": 15.766384999999985,
+        "rss_kib": 120536,
+        "process_ms": 581.9644750008592
+      },
+      {
+        "decoder": "jSquash WASM",
+        "width": 1088,
+        "height": 1632,
+        "bytes": 350548,
+        "first_ms": 26.459876999999995,
+        "median_ms": 14.343869999999981,
+        "p95_ms": 15.367853000000025,
+        "rss_kib": 122552,
+        "process_ms": 568.3828530018218
+      },
+      {
+        "decoder": "jSquash WASM",
+        "width": 1088,
+        "height": 1632,
+        "bytes": 350548,
+        "first_ms": 26.011793999999995,
+        "median_ms": 14.839121000000034,
+        "p95_ms": 16.080138000000005,
+        "rss_kib": 120432,
+        "process_ms": 583.9593339987914
+      }
+    ]
+  },
+  {
+    "sample": "13.1088w.avif",
+    "runtime": "GD",
+    "width": 1088,
+    "height": 1632,
+    "first_ms": 17.14,
+    "median_ms": 9.78,
+    "p95_ms": 10.08,
+    "rss_kib": 74732,
+    "runs": [
+      {
+        "decoder": "GD",
+        "width": 1088,
+        "height": 1632,
+        "bytes": 133708,
+        "first_ms": 15.897439,
+        "median_ms": 9.738677,
+        "p95_ms": 10.03578,
+        "rss_kib": 74620,
+        "process_ms": 394.4327950011939
+      },
+      {
+        "decoder": "GD",
+        "width": 1088,
+        "height": 1632,
+        "bytes": 133708,
+        "first_ms": 17.144066,
+        "median_ms": 9.790152,
+        "p95_ms": 10.081936,
+        "rss_kib": 74900,
+        "process_ms": 395.7157999975607
+      },
+      {
+        "decoder": "GD",
+        "width": 1088,
+        "height": 1632,
+        "bytes": 133708,
+        "first_ms": 17.245935,
+        "median_ms": 9.782058,
+        "p95_ms": 10.476839,
+        "rss_kib": 74732,
+        "process_ms": 395.99256500514457
+      }
+    ]
+  },
+  {
+    "sample": "13.1088w.avif",
+    "runtime": "WASM",
+    "width": 1088,
+    "height": 1632,
+    "first_ms": 170.5,
+    "median_ms": 104.32,
+    "p95_ms": 107.51,
+    "rss_kib": 180932,
+    "runs": [
+      {
+        "decoder": "jSquash WASM",
+        "width": 1088,
+        "height": 1632,
+        "bytes": 133708,
+        "first_ms": 175.144118,
+        "median_ms": 104.31716899999992,
+        "p95_ms": 107.61262600000009,
+        "rss_kib": 186300,
+        "process_ms": 3881.347923001158
+      },
+      {
+        "decoder": "jSquash WASM",
+        "width": 1088,
+        "height": 1632,
+        "bytes": 133708,
+        "first_ms": 166.456876,
+        "median_ms": 104.96897000000013,
+        "p95_ms": 107.50982399999998,
+        "rss_kib": 180508,
+        "process_ms": 3886.2711460024
+      },
+      {
+        "decoder": "jSquash WASM",
+        "width": 1088,
+        "height": 1632,
+        "bytes": 133708,
+        "first_ms": 170.501215,
+        "median_ms": 103.10091700000021,
+        "p95_ms": 104.27421700000002,
+        "rss_kib": 180932,
+        "process_ms": 3828.400521997537
+      }
+    ]
+  }
+]

@@ -14,11 +14,13 @@ The upstream MIT license is included in each build.
    **Load Temporary Add-on**, and select the manifest in
    `dist/wallabagger-sandstorm-firefox`. Temporary Firefox installation lasts until
    the browser restarts; a distributable Firefox release still needs signing.
-3. Open your wallabag grain. In Sandstorm's **Get Webkey** (key) menu, create a
-   webkey named “Wallabagger” with the Collaborator role (full library access).
+3. Open your wallabag grain. In the account dropdown, choose **Browser extensions**,
+   then **Create extension credentials**. This page also provides both downloads
+   and installation instructions. On older packages, use Sandstorm's **Get Webkey**
+   menu to create a webkey with the Collaborator role (full library access).
 4. Open the extension's Options. Paste the complete webkey, including its `#token`,
    and your library address from the browser address bar (`https://…/grain/ID`).
-   Click **Connect**, then allow access to that API host when the browser asks.
+   Click **Connect** within five minutes, then allow access to that API host when the browser asks.
 5. Open an article and click the Wallabagger toolbar icon or press **Alt+W**.
    The popup saves it and lets you change its title, tags, starred/archive state,
    or delete it. **Alt+Shift+W** saves without opening the popup. Clicking the
@@ -32,8 +34,8 @@ pages where extensions cannot run cannot be captured.
 
 The extension sends the current page HTML to your library, including content you
 are signed in to read. Wallabag sanitizes that HTML. It does not fetch the article
-again or download linked images in browser-capture mode. Images remain remote
-references and may not display under Sandstorm's content policy. Saving directly
+again or download linked images in browser-capture mode. Images that the extension
+cannot upload are omitted; viewing a saved article never fetches remote images. Saving directly
 inside the grain retains the existing Powerbox-based image download behavior.
 
 The webkey grants full access to this library. It is stored in the extension's
@@ -64,7 +66,14 @@ same token mode can be integrated into upstream's normal settings UI.
 
 The matching app patch accepts `sandstorm_capture: true` on POST `/api/entries.json`.
 It requires nonempty `content`, retains Graby's HTML sanitization, disables URL
-fetch fallback, and skips the image-download subscriber for that request. API PATCH edits also
+fetch fallback, and processes supplied raster images locally, including thumbnails. SVG uploads are
+sanitized and stored locally as vectors, with attachment disposition on responses
+to prevent direct navigation from rendering them as documents.
+The extension uploads accessible page images, omitting cookies and the library token
+from image requests. Uploads are limited to 32 images, 3 MiB each and 12 MiB total,
+with a 12-second fetch budget. Failed downloads are omitted. SVGs share the same byte and time limits. The optional
+**Allow images from other sites** setting grants browser access to image CDNs;
+redirecting images and unsupported formats are omitted. API PATCH edits also
 skip image downloads, so tagging and starring cannot wait for a website grant. A
 Sandstorm webkey is still required, and normal grain permission checks still apply.
 

@@ -9,8 +9,12 @@
         button.disabled = false;
         if (event.data.error) { status.textContent = event.data.error; return; }
         if (typeof event.data.uri !== 'string') return;
-        const uri = new URL(event.data.uri);
-        if (!['https:', 'http:'].includes(uri.protocol)) return;
+        let uri;
+        try { uri = new URL(event.data.uri); } catch (_) {
+            status.textContent = 'Sandstorm returned an invalid credentials URL. Please try again.';
+            return;
+        }
+        if (!['https:', 'http:'].includes(uri.protocol) || uri.username || uri.password) return;
         frame.src = uri.href;
         frame.hidden = false;
         status.textContent = 'Copy these credentials into your RSS reader.';

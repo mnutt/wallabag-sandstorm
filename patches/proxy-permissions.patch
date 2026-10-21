@@ -1,3 +1,10 @@
+# Target: pinned source in upstream.lock.
+# Purpose: Require this app's "access" permission when claiming outbound capabilities.
+# Coupling: "access" must match bridgeConfig.viewInfo.permissions in sandstorm-pkgdef.capnp.
+# Do not replace this with an empty list: Feed reader credentials must not gain outbound access.
+# Upgrade: Review claim-token permission semantics and any new capability-claim paths.
+# Validation: Website grants must work for collaborators; feed-only credentials stay restricted.
+
 --- a/server.go
 +++ b/server.go
 @@ -251,7 +251,7 @@

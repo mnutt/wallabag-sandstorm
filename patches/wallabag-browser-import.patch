@@ -1,0 +1,72 @@
+# Target: pinned wallabag BrowserImport and Firefox/Chrome importers.
+# Purpose: Queue bookmark leaves, not folders that consumers silently discard.
+# Preserve the upload's mark-as-read flag when a fresh worker consumes each job.
+# Upgrade: Recheck browser backup traversal and consumer validation order.
+# Validation: php tests/browser-import.php (in the build VM after applying patches).
+
+--- a/src/Wallabag/ImportBundle/Import/BrowserImport.php
++++ b/src/Wallabag/ImportBundle/Import/BrowserImport.php
+@@ -200,22 +200,25 @@
+      */
+     protected function parseEntriesForProducer(array $entries)
+     {
+-        foreach ($entries as $importedEntry) {
+-            if ((array) $importedEntry !== $importedEntry) {
+-                continue;
+-            }
+-
+-            // set userId for the producer (it won't know which user is connected)
+-            $importedEntry['userId'] = $this->user->getId();
+-
+-            if ($this->markAsRead) {
+-                $importedEntry = $this->setEntryAsRead($importedEntry);
+-            }
+-
+-            ++$this->queuedEntries;
+-
+-            $this->producer->publish(json_encode($importedEntry));
+-        }
++        // Browser backups contain folders and root collections. Consumers validate
++        // each job before parsing it, so only bookmark leaves belong in the queue.
++        if (!$this->validateEntry($entries)) {
++            foreach ($entries as $child) {
++                if (\is_array($child)) {
++                    $this->parseEntriesForProducer($child);
++                }
++            }
++
++            return;
++        }
++
++        $entries['userId'] = $this->user->getId();
++        if ($this->markAsRead) {
++            $entries = $this->setEntryAsRead($entries);
++        }
++
++        $this->producer->publish(json_encode($entries));
++        ++$this->queuedEntries;
+     }
+ 
+     /**
+--- a/src/Wallabag/ImportBundle/Import/FirefoxImport.php
++++ b/src/Wallabag/ImportBundle/Import/FirefoxImport.php
+@@ -51,7 +51,7 @@
+             'title' => $entry['title'],
+             'html' => false,
+             'url' => $entry['uri'],
+-            'is_archived' => (int) $this->markAsRead,
++            'is_archived' => (int) ($entry['is_archived'] ?? $this->markAsRead),
+             'is_starred' => false,
+             'tags' => '',
+             'created_at' => substr($entry['dateAdded'], 0, 10),
+--- a/src/Wallabag/ImportBundle/Import/ChromeImport.php
++++ b/src/Wallabag/ImportBundle/Import/ChromeImport.php
+@@ -51,7 +51,7 @@
+             'title' => $entry['name'],
+             'html' => false,
+             'url' => $entry['url'],
+-            'is_archived' => (int) $this->markAsRead,
++            'is_archived' => (int) ($entry['is_archived'] ?? $this->markAsRead),
+             'is_starred' => false,
+             'tags' => '',
+             'created_at' => substr($entry['date_added'], 0, 10),

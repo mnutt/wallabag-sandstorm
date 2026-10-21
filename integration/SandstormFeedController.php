@@ -25,15 +25,34 @@ final class SandstormFeedController extends AbstractController
      */
     public function feed(Request $request, EntryRepository $repository, string $type)
     {
+        // Reject array-shaped parameters before passing them to SQL or URL builders.
+        foreach (['limit', 'page', 'tag', 'origin'] as $name) {
+            if ($request->query->has($name) && !is_string($request->query->get($name))) {
+                return new Response('Feed parameters must be strings.', 400);
+            }
+        }
         $limit = filter_var($request->query->get('limit', 50), FILTER_VALIDATE_INT);
         $page = filter_var($request->query->get('page', 1), FILTER_VALIDATE_INT);
         if (!$limit || $limit < 1 || $limit > 100 || !$page || $page < 1 || $page > 10000) {
             return new Response('Use limit=1..100 and page=1..10000.', 400);
         }
+        $tag = $request->query->get('tag', '');
+        // API sessions have no public host. This optional origin is link metadata,
+        // never a fetch destination. Validate it before querying the library.
+        $base = $request->query->get('origin', $request->headers->get('X-Sandstorm-Base-Path', ''));
+        if ($base !== '' && (!filter_var($base, FILTER_VALIDATE_URL) ||
+            !preg_match('#^https?://[^/?\\#@]+$#D', $base))) {
+            return new Response('origin must be an HTTP(S) origin without credentials or a path.', 400);
+        }
+        // Never echo arbitrary query arguments (possibly credentials) into the feed.
+        $params = ['limit' => $limit, 'page' => $page];
+        if ($tag !== '') $params['tag'] = $tag;
+        if ($base !== '') $params['origin'] = $base;
+        $feedPath = '/feeds/' . $type . '.xml';
+        $self = $base !== '' ? $base . $feedPath . '?' . http_build_query($params) : null;
         $methods = ['all' => 'getBuilderForAllByUser', 'unread' => 'getBuilderForUnreadByUser',
             'archive' => 'getBuilderForArchiveByUser', 'starred' => 'getBuilderForStarredByUser'];
         $query = $repository->{$methods[$type]}($this->getUser()->getId());
-        $tag = $request->query->get('tag', '');
         if ($tag !== '') {
             $query->innerJoin('e.tags', 'feedTag')->andWhere('feedTag.slug = :feedTag')->setParameter('feedTag', $tag);
         }
@@ -52,14 +71,6 @@ final class SandstormFeedController extends AbstractController
             $node->appendChild($doc->createTextNode($value ?? ''));
             return $node;
         };
-        // API sessions deliberately omit the public host. The setup template supplies
-        // it as non-secret metadata; never derive links from the dummy Host: sandbox.
-        $base = $request->query->get('origin', $request->headers->get('X-Sandstorm-Base-Path', ''));
-        if ($base !== '' && (!filter_var($base, FILTER_VALIDATE_URL) ||
-            !preg_match('#^https?://[^/?\\#@]+$#D', $base))) {
-            return new Response('origin must be an HTTP(S) origin without credentials or a path.', 400);
-        }
-        $self = $base !== '' ? $base . $request->getRequestUri() : null;
         $text($channel, 'title', 'wallabag — ' . $type . ($tag !== '' ? ' — ' . $tag : ''));
         $text($channel, 'link', $self ?? 'https://wallabag.org');
         $text($channel, 'description', 'Saved articles from your wallabag library.');
@@ -72,10 +83,9 @@ final class SandstormFeedController extends AbstractController
             $node->setAttribute('href', $url);
         };
         if ($self !== null) $link('self', $self);
-        if ($hasNext && $base !== '') {
-            $params = $request->query->all();
+        if ($hasNext && $page < 10000 && $base !== '') {
             $params['page'] = $page + 1;
-            $link('next', $base . $request->getPathInfo() . '?' . http_build_query($params));
+            $link('next', $base . $feedPath . '?' . http_build_query($params));
         }
         // Stable across API tokens and feed filters, distinct for each library.
         $namespace = substr(hash('sha256', $this->getParameter('secret')), 0, 32);

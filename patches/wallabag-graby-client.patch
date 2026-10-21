@@ -1,3 +1,11 @@
+# Target: pinned source in upstream.lock.
+# Purpose: Inject the capability-aware HTTP client into Graby instead of auto-discovery.
+# Coupling: wallabag-sandstorm.patch configures the factory; wallabag-capability-dns.patch
+# removes the local-DNS check on the assumption that this injected client is used.
+# Use the existing named DI argument rather than replacing Graby or its extraction logic.
+# Upgrade: Confirm Graby's constructor still accepts $client and all fetch paths use it.
+# Validation: Build/cache warmup validates DI; tests/smoke.cjs exercises a real HTTPS fetch.
+
 --- a/app/config/services.yml
 +++ b/app/config/services.yml
 @@ -214,6 +214,7 @@

@@ -1,6 +1,19 @@
+# Target: pinned source in upstream.lock.
+# Purpose: Render the identity-specific theme from Symfony's Request cookie bag, which
+# SandstormThemeSubscriber populates before rendering. Upstream theme_class reads raw $_COOKIE
+# and would ignore that server-side preference on a fresh Sandstorm session origin.
+# Expose a CSRF token only when the subscriber identifies an interactive signed-in user.
+# Coupling: integration/SandstormTheme*.php and integration/sandstorm.js; anonymous users
+# retain cookie-based behavior, and the shared library account is not the preference key.
+# Upgrade: Recheck upstream theme_class and theme JavaScript/cookie semantics before rebasing.
+# Validation: tests/persistence.cjs, tests/theme-state.php and tests/theme.cjs.
+
 --- a/src/Wallabag/CoreBundle/Resources/views/base.html.twig
 +++ b/src/Wallabag/CoreBundle/Resources/views/base.html.twig
-@@ -7,3 +7,6 @@
+@@ -4,8 +4,11 @@
+ <!--[if lte IE 7]><html class="no-js ie7 ie67 ie678"{% if lang is not empty %} lang="{{ lang }}"{% endif %}><![endif]-->
+ <!--[if IE 8]><html class="no-js ie8 ie678"{% if lang is not empty %} lang="{{ lang }}"{% endif %}><![endif]-->
+ <!--[if gt IE 8]><html class="no-js"{% if lang is not empty %} lang="{{ lang }}"{% endif %}><![endif]-->
 -<html{% if lang is not empty %} class="{{ theme_class() }}" lang="{{ lang }}"{% endif %}>
 +<html class="{{ app.request.cookies.get('theme') == 'dark' ? 'dark-theme' : '' }}"{% if lang is not empty %} lang="{{ lang }}"{% endif %}>
      <head>
@@ -8,3 +21,5 @@
 +            <meta name="sandstorm-theme-token" content="{{ csrf_token('sandstorm_theme') }}">
 +        {% endif %}
          {% block head %}
+             <meta name="viewport" content="initial-scale=1.0">
+             <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />

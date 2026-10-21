@@ -1,0 +1,24 @@
+# Target: wallabag 2.6.14
+# Purpose: Preserve queued HTML bookmark archive state.
+--- a/src/Wallabag/ImportBundle/Import/PocketHtmlImport.php
++++ b/src/Wallabag/ImportBundle/Import/PocketHtmlImport.php
+@@ -98,7 +98,7 @@
+             'title' => '',
+             'html' => false,
+             'url' => $entry['url'],
+-            'is_archived' => (int) $this->markAsRead,
++            'is_archived' => (int) ($entry['is_archived'] ?? $this->markAsRead),
+             'is_starred' => false,
+             'tags' => '',
+             'created_at' => $entry['created_at'],
+--- a/src/Wallabag/ImportBundle/Import/ShaarliImport.php
++++ b/src/Wallabag/ImportBundle/Import/ShaarliImport.php
+@@ -51,7 +51,7 @@
+             'title' => '',
+             'html' => false,
+             'url' => $entry['url'],
+-            'is_archived' => (int) $this->markAsRead,
++            'is_archived' => (int) ($entry['is_archived'] ?? $this->markAsRead),
+             'is_starred' => false,
+             'tags' => '',
+             'created_at' => $entry['created_at'],

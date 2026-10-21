@@ -1,3 +1,16 @@
+# Target: pinned source in upstream.lock.
+# Purpose: Wire the Sandstorm authenticator, outbound HTTP adapter and browser integration;
+# remove native account/setup navigation that does not apply to a shared reading-library grain.
+# Authentication: integration/security.yml registers the required authenticator. Hiding menu
+# links is only UX; server-side route/permission checks must continue to enforce access.
+# Networking: Article/image clients use the explicit loopback proxy and its per-grain CA;
+# verification stays enabled. The longer timeout accommodates interactive website grants.
+# Coupling: Pair with wallabag-graby-client.patch and wallabag-capability-dns.patch.
+# UI: Load Powerbox/navigation helpers and start empty libraries on their unread list.
+# wallabag-warm-theme.patch applies after this patch and extends the script block.
+# Upgrade: Review constructor/service names, network clients, account routes, and template hooks.
+# Validation: Container warmup plus tests/smoke.cjs, tests/persistence.cjs and tests/feeds.cjs.
+
 --- a/app/AppKernel.php
 +++ b/app/AppKernel.php
 @@ -3,6 +3,8 @@

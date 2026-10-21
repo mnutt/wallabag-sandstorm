@@ -14,7 +14,8 @@ final class SandstormThemeController extends AbstractController
     public function save(Request $request, SandstormTheme $themes): Response
     {
         $identity = $themes->identity($request);
-        if ($identity === null || !$this->isCsrfTokenValid('sandstorm_theme', $request->request->get('_token'))) {
+        $token = $request->request->get('_token');
+        if ($identity === null || !is_string($token) || !$this->isCsrfTokenValid('sandstorm_theme', $token)) {
             return new Response('A signed-in user and valid CSRF token are required.', 403);
         }
         $theme = $request->request->get('theme');

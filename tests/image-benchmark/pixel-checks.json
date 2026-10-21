@@ -1,0 +1,38 @@
+[
+  {
+    "sample": "article.avif",
+    "runtime": "icodec",
+    "max_channel_difference": 0,
+    "mean_channel_difference": 0.0
+  },
+  {
+    "sample": "article.avif",
+    "runtime": "dav1d",
+    "max_channel_difference": 4,
+    "mean_channel_difference": 0.266
+  },
+  {
+    "sample": "2.2096w.avif",
+    "runtime": "icodec",
+    "max_channel_difference": 0,
+    "mean_channel_difference": 0.0
+  },
+  {
+    "sample": "2.2096w.avif",
+    "runtime": "dav1d",
+    "max_channel_difference": 2,
+    "mean_channel_difference": 0.141
+  },
+  {
+    "sample": "13.1088w.avif",
+    "runtime": "icodec",
+    "max_channel_difference": 0,
+    "mean_channel_difference": 0.0
+  },
+  {
+    "sample": "13.1088w.avif",
+    "runtime": "dav1d",
+    "max_channel_difference": 0,
+    "mean_channel_difference": 0.0
+  }
+]

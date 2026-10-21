@@ -1,3 +1,18 @@
+# Target: pinned source in upstream.lock.
+# Purpose: Share build-time Symfony caches in the read-only package instead of copying
+# megabytes of derived data into every grain; keep runtime-created state under /var.
+# Coupling: .sandstorm/build.sh warms the cache at its final /opt/app path; launcher.sh
+# creates private directories and invalidates private caches when runtime-version changes.
+# parameters.php uses runtime env placeholders so the warmed cache contains no grain secrets.
+# ArrayAdapter avoids per-grain copies of derivable application/system/Craue settings caches.
+# JMS, Hateoas, Rulerz, FOS REST, the cookie jar and JS routing can still write at runtime.
+# The FOSJsRouting vendor edit is deliberately narrow: this pinned bundle has no configuration
+# option for the extractor cache directory. Reassess if an upstream option becomes available.
+# Upgrade: Re-audit every cache writer and the FOS extractor constructor/service definition;
+# a successful warmup alone does not prove runtime compatibility with a read-only package.
+# Validation: tests/runtime-state.php plus smoke, extension and feeds tests in an actual grain;
+# check logs for read-only-filesystem errors, including /js/routing requests.
+
 --- a/app/AppKernel.php
 +++ b/app/AppKernel.php
 @@ -64,7 +64,7 @@

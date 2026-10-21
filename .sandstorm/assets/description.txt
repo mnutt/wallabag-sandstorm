@@ -1,0 +1,14 @@
+Save articles from the web and read them later in a clean, comfortable reading view. Organize your library with tags, stars, archives, search, and annotations. Choose a light or dark theme, or follow your device’s appearance.
+
+Each Sandstorm grain is an independent reading library. Share it with collaborators through Sandstorm, without separate wallabag accounts. Collaborators can read, save, edit, export, and delete articles.
+
+- Save URLs from the app and approve website access through Sandstorm’s permission dialog.
+- Capture pages using the adapted Wallabagger browser extension from the source repository.
+- Subscribe with an RSS reader using revocable, feed-only credentials.
+- Bookmark articles and filtered lists; reloading preserves your location.
+- Keep a personal theme preference within each library.
+- Import saved articles in the background with persistent queues, pause/retry controls, and Sandstorm completion activity.
+
+This package uses wallabag 2.6.14. Unmodified mobile clients and browser extensions are not supported. Feed reader access covers RSS only, not a read-only library interface. Keep the library open during imports that need access to new websites. Import formats other than wallabag JSON and article reloads have limited testing. The adapted browser extension uploads supported page images for local resizing and thumbnails; images in external RSS readers may not display.
+
+[Source and browser extension](https://github.com/sandstorm-org/wallabag-sandstorm) · [Report a packaging issue](https://github.com/sandstorm-org/wallabag-sandstorm/issues)

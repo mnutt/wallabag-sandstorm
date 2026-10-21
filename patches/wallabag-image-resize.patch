@@ -1,0 +1,152 @@
+# Target: pinned source in upstream.lock.
+# Purpose: Bound GD decoding and save resized article images plus separate library thumbnails.
+# Helper lives in integration/SandstormImageProcessor.php; SVG keeps upstream sanitization.
+# Order: After wallabag-browser-capture.patch, which patches the same subscriber.
+# Existing images are not migrated. Preview images reuse thumbnails produced by processHtml.
+# Validation: tests/images.php covers dimensions, transparency, EXIF, malformed inputs and wiring.
+--- a/src/Wallabag/CoreBundle/Helper/DownloadImages.php
++++ b/src/Wallabag/CoreBundle/Helper/DownloadImages.php
+@@ -114,7 +114,7 @@
+      *
+      * @return string|false Relative url to access the image from the web
+      */
+-    public function processSingleImage($entryId, $imagePath, $url, $relativePath = null)
++    public function processSingleImage($entryId, $imagePath, $url, $relativePath = null, $thumbnail = false)
+     {
+         if (null === $imagePath) {
+             return false;
+@@ -136,8 +136,21 @@
+             return false;
+         }
+ 
++        require_once '/opt/app/integration/SandstormImageProcessor.php';
++        $hashImage = hash('crc32', $absolutePath);
++        $urlBase = $this->wallabagUrl . '/assets/images/' . $relativePath . '/' . $hashImage;
++        // processHtml has often just downloaded this same image. Reuse its thumbnail.
++        if ($thumbnail) {
++            foreach (['jpg', 'png', 'webp'] as $cachedExtension) {
++                if (is_file($folderPath . '/' . $hashImage . '-thumb.' . $cachedExtension)) {
++                    return $urlBase . '-thumb.' . $cachedExtension;
++                }
++            }
++        }
+         try {
+             $res = $this->client->get($absolutePath);
++            $bytes = SandstormImageProcessor::readResponse($res);
++            if ($bytes === false) return false;
+         } catch (\Exception $e) {
+             $this->logger->error('DownloadImages: Can not retrieve image, skipping.', ['exception' => $e]);
+ 
+@@ -145,11 +158,12 @@
+         }
+ 
+-        $ext = $this->getExtensionFromResponse($res, $imagePath);
++        $info = @getimagesizefromstring($bytes);
++        // The pinned MIME database predates AVIF; recognize its decoded header.
++        $ext = ($info && $info[2] === IMAGETYPE_AVIF) ? 'avif' : $this->getExtensionFromResponse($res, $imagePath);
+-        if (false === $res) {
+-            return false;
+-        }
+-
+-        $hashImage = hash('crc32', $absolutePath);
++        if (false === $ext) {
++            return false;
++        }
++
+         $localPath = $folderPath . '/' . $hashImage . '.' . $ext;
+         $urlPath = $this->wallabagUrl . '/assets/images/' . $relativePath . '/' . $hashImage . '.' . $ext;
+ 
+@@ -159,7 +171,7 @@
+                 $sanitizer = new Sanitizer();
+                 $sanitizer->minify(true);
+                 $sanitizer->removeRemoteReferences(true);
+-                $cleanSVG = $sanitizer->sanitize((string) $res->getBody());
++                $cleanSVG = $sanitizer->sanitize($bytes);
+ 
+                 // add an extra validation by checking about `<svg `
+                 if (false === $cleanSVG || false === strpos($cleanSVG, '<svg ')) {
+@@ -178,56 +190,12 @@
+             }
+         }
+ 
+-        try {
+-            $im = imagecreatefromstring((string) $res->getBody());
+-        } catch (\Exception $e) {
+-            $im = false;
+-        }
+-
+-        if (false === $im) {
+-            $this->logger->error('DownloadImages: Error while regenerating image', ['path' => $localPath]);
+-
+-            return false;
+-        }
+-
+-        switch ($ext) {
+-            case 'gif':
+-                // use Imagick if available to keep GIF animation
+-                if (class_exists(\Imagick::class)) {
+-                    try {
+-                        $imagick = new \Imagick();
+-                        $imagick->readImageBlob($res->getBody());
+-                        $imagick->setImageFormat('gif');
+-                        $imagick->writeImages($localPath, true);
+-                    } catch (\Exception $e) {
+-                        // if Imagick fail, fallback to the default solution
+-                        imagegif($im, $localPath);
+-                    }
+-                } else {
+-                    imagegif($im, $localPath);
+-                }
+-
+-                $this->logger->debug('DownloadImages: Re-creating gif');
+-                break;
+-            case 'jpeg':
+-            case 'jpg':
+-                imagejpeg($im, $localPath, self::REGENERATE_PICTURES_QUALITY);
+-                $this->logger->debug('DownloadImages: Re-creating jpg');
+-                break;
+-            case 'png':
+-                imagealphablending($im, false);
+-                imagesavealpha($im, true);
+-                imagepng($im, $localPath, ceil(self::REGENERATE_PICTURES_QUALITY / 100 * 9));
+-                $this->logger->debug('DownloadImages: Re-creating png');
+-                break;
+-            case 'webp':
+-                imagewebp($im, $localPath, self::REGENERATE_PICTURES_QUALITY);
+-                $this->logger->debug('DownloadImages: Re-creating webp');
+-        }
+-
+-        imagedestroy($im);
+-
+-        return $urlPath;
++        $extension = SandstormImageProcessor::save($bytes, $folderPath . '/' . $hashImage);
++        if ($extension === false) {
++            $this->logger->warning('Image could not be resized within the configured limits.');
++            return false;
++        }
++        return $urlBase . ($thumbnail ? '-thumb' : '') . '.' . $extension;
+     }
+ 
+     /**
+@@ -350,7 +318,7 @@
+             $this->logger->debug('DownloadImages: Checking extension (alternative)', ['ext' => $ext]);
+         }
+
+-        if (!\in_array($ext, ['jpeg', 'jpg', 'gif', 'png', 'webp', 'svg'], true)) {
++        if (!\in_array($ext, ['jpeg', 'jpg', 'gif', 'png', 'webp', 'avif', 'svg'], true)) {
+             $this->logger->error('DownloadImages: Processed image with not allowed extension. Skipping: ' . $imagePath);
+
+             return false;
+--- a/src/Wallabag/CoreBundle/Event/Subscriber/DownloadImagesSubscriber.php
++++ b/src/Wallabag/CoreBundle/Event/Subscriber/DownloadImagesSubscriber.php
+@@ -114,7 +114,9 @@
+         return $this->downloadImages->processSingleImage(
+             $entry->getId(),
+             $entry->getPreviewPicture(),
+-            $entry->getUrl()
++            $entry->getUrl(),
++            null,
++            true
+         );
+     }
+ }

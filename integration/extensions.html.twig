@@ -1,0 +1,36 @@
+{% extends '@WallabagCore/layout.html.twig' %}
+{% block title %}Browser extensions{% endblock %}
+{% block content %}
+<div class="row sandstorm-extensions"><div class="col s12">
+<p>Save the page you are reading to this library with Wallabagger for Sandstorm. It captures page text and available images, including articles you are signed in to read.</p>
+<p>Use the Sandstorm builds below. The standard Wallabagger browser-store extension does not support connecting to this library.</p>
+<h2>Firefox — development build</h2>
+<p><a href="{{ asset('extensions/wallabagger-sandstorm-firefox.zip') }}" download>Download Wallabagger for Firefox</a></p>
+<p>This build is unsigned and has not been browser-tested. Temporary installation lasts until Firefox restarts.</p>
+<ol>
+<li>Download and extract the ZIP.</li>
+<li>Open <code>about:debugging#/runtime/this-firefox</code>, choose <strong>Load Temporary Add-on</strong>, and select <code>manifest.json</code> in the extracted folder.</li>
+</ol>
+<h2>Chrome and Chromium</h2>
+<p><a href="{{ asset('extensions/wallabagger-sandstorm-chrome.zip') }}" download>Download Wallabagger for Chrome / Chromium</a></p>
+<ol>
+<li>Download and extract the ZIP to a folder you will keep.</li>
+<li>Open <code>chrome://extensions</code> and enable <strong>Developer mode</strong>.</li>
+<li>Choose <strong>Load unpacked</strong> and select the extracted folder.</li>
+</ol>
+<h2>Connect to this library</h2>
+<p>Create a separate credential for each browser. These credentials grant full access to this library, including editing and deleting articles.</p>
+<button id="extension-connect" class="btn">Create extension credentials</button>
+<p id="extension-status" role="status"></p>
+<iframe id="extension-credentials" title="Browser extension credentials" hidden></iframe>
+<ol>
+<li>Open Wallabagger’s <strong>Options</strong> and paste the complete API webkey shown above, including its <code>#token</code>.</li>
+<li>For the library address, copy this library’s Sandstorm address from your browser’s address bar.</li>
+<li>Click <strong>Connect</strong> within five minutes to activate the credentials, then allow access when your browser asks.</li>
+</ol>
+<p>Credentials continue working until revoked through Sandstorm’s <strong>Get Webkey</strong> menu. To reconnect after revoking one, create a new credential here.</p>
+<h2>Save an article</h2>
+<p>Open an article and click the Wallabagger toolbar icon or press <strong>Alt+W</strong>. Use <strong>Alt+Shift+W</strong> to save without opening the popup. The popup also lets you edit the title and tags, star or archive the article, and delete it.</p>
+</div></div>
+<script src="{{ asset('sandstorm-extensions.js') }}"></script>
+{% endblock %}

@@ -1,3 +1,21 @@
+# Target: pinned source in extension/upstream.lock.
+# Purpose: Adapt pinned Wallabagger to revocable Sandstorm bearer webkeys and browser-captured HTML.
+# Authentication: API-version probes also need the token; bypass OAuth expiry/refresh only in
+# Sandstorm mode. Treat revoked tokens as requiring reconnection, never an OAuth fallback.
+# Navigation: Use GrainUrl for browser links, keeping the credential-bearing API origin separate.
+# Capture: Require tab content, suppress URL-only link saves, and clean up listeners if injection
+# fails. Pair sandstorm_capture with patches/wallabag-browser-capture.patch; server sanitization
+# must remain enabled. Removing the unconditional console dump avoids leaking captured page data.
+# Cache: Clear article/existence caches on reconnect so switching libraries cannot reuse old IDs.
+# Transport: Reject redirects rather than following a credentialed API request elsewhere;
+# handle Sandstorm's non-JSON errors without losing a useful failure message.
+# Scope: This distribution replaces the options UI and intentionally favors tab capture over
+# upstream link-only/context-menu behavior; it is not a drop-in generic Wallabagger release.
+# Upgrade: Review API initialization/token flows, capture messaging, cache callers and manifest
+# permissions; don't patch generated/minified assets or bypass browser host permissions.
+# Validation: extension/build.sh builds both manifests; tests/extension.cjs exercises Chromium
+# capture and API operations. Firefox output builds but is not a substitute for Firefox UI testing.
+
 --- a/wallabagger/js/wallabag-api.js
 +++ b/wallabagger/js/wallabag-api.js
 @@ -7,6 +7,8 @@
@@ -11,7 +29,7 @@
          ClientSecret: null,
 @@ -48,7 +50,7 @@
      }
- 
+
      async forceInit () {
 -        if (!this.data.ClientId) {
 +        if (!this.checkParams()) {
@@ -20,23 +38,23 @@
      }
 @@ -77,6 +79,7 @@
      }
- 
+
      checkParams () {
 +        if (this.data.Sandstorm) return Boolean(this.data.Url && this.data.ApiToken);
          return ((this.data.ClientId !== null) &&
                   (this.data.ClientSecret !== null) &&
                   (this.data.UserLogin !== null) &&
 @@ -89,7 +92,7 @@
- 
+
      // @TODO rename method to avoid conflict with data.isTokenExpired
      #isTokenExpired () {
 -        return Date.now() > this.data.ExpireDate;
 +        return !this.data.Sandstorm && Date.now() > this.data.ExpireDate;
      }
- 
+
      clear () {
 @@ -109,7 +112,7 @@
- 
+
      checkUrl () {
          const url_ = this.data.Url + '/api/version';
 -        return this.#fetchApi.get(url_, '')
@@ -46,7 +64,7 @@
                  this.#setAllowExistSafe();
 @@ -208,6 +211,9 @@
      }
- 
+
      savePage (options) {
 +        if (this.data.Sandstorm && !options.content) {
 +            return Promise.reject(new Error('Open the article in a browser tab, then save it using Wallabagger. Sandstorm requires browser-captured content.'));
@@ -64,7 +82,7 @@
              this.#fetchApi.post(entriesUrl, this.data.ApiToken, content)
 @@ -233,6 +240,7 @@
      }
- 
+
      passwordToken () {
 +        if (this.data.Sandstorm) return Promise.reject(new Error('Reconnect with a new Sandstorm API token in extension settings.'));
          const content = {
@@ -73,9 +91,9 @@
 --- a/wallabagger/js/background.js
 +++ b/wallabagger/js/background.js
 @@ -23,7 +23,7 @@
- 
+
  const savePage = new SavePage(browser, logger, browserUtils, savePageToWallabag, fetchLocally);
- 
+
 -const wallabaggerAddLinkContexts = ['link', 'page'];
 +const wallabaggerAddLinkContexts = ['page'];
  if (!globalThis.wallabaggerBrowser) {
@@ -109,7 +127,7 @@
 +    if (browserUtils.isServicePage(tabUrl, api.data.GrainUrl || api.data.Url)) {
          return;
      }
- 
+
 @@ -277,7 +277,7 @@
          logger.log('set locally fetched', { title, content });
          savePageOptions.title = title;
@@ -117,7 +135,7 @@
 -        console.log(savePageOptions);
 +
      }
- 
+
      const promise = api.savePage(savePageOptions);
 @@ -305,7 +305,7 @@
          .catch(error => {
@@ -149,12 +167,37 @@
 +    clearAll () {
 +        this.#cache = [];
      }
- 
+
      clear (key) {
 --- a/wallabagger/js/browser-content-fetch/browser-content-fetch.js
 +++ b/wallabagger/js/browser-content-fetch/browser-content-fetch.js
-@@ -50,7 +50,8 @@
- 
+@@ -2,6 +2,7 @@
+
+ import { EuropresseProvider } from './providers/europresse-provider.js';
+ import { FetchLocally } from './fetch-locally.js';
++import { capturePageImages } from '../capture-images.js';
+
+ export class BrowserContentFetch {
+     #europresse = new EuropresseProvider();
+@@ -21,7 +22,7 @@
+     async handle(tab, savePageToWallabag) {
+         const isEuropresse = this.#europresse.isCurrentUrl(tab.url);
+
+-        const listener = (event, sender) => {
++        const listener = async (event, sender) => {
+             if (typeof event.content === 'undefined') {
+                 return;
+             }
+@@ -32,6 +33,7 @@
+
+             this.#browser.runtime.onMessage.removeListener(listener);
+
++            event.content = await capturePageImages(event);
+             const wallabagEntry = isEuropresse ?
+                 this.#europresse.getEntry(tab.url, event) :
+                 { url: tab.url, content: event.content };
+@@ -50,15 +52,32 @@
+
          const isToFetchLocally = isEuropresse || (!this.#browserUtils.isRestrictedPage(tab.url) && await this.#fetchLocally.isSiteToFetchLocally(tab.url));
          if (isToFetchLocally) {
 -            browser.scripting.executeScript({
@@ -163,7 +206,34 @@
                  target: { tabId: tab.id },
                  func: (selectors) => {
                      // Use of chrome here instead of browser
-@@ -69,8 +70,13 @@
+                     // because of isolated context where
+                     // browser is undefined in Chromium-based browsers
+-                    const result = {
+-                        content: `<html>${document.documentElement.innerHTML}</html>`
+-                    };
++                    const clone = document.documentElement.cloneNode(true);
++                    const images = [];
++                    const originals = document.querySelectorAll('img');
++                    const copies = clone.querySelectorAll('img');
++                    const prefix = 'https://sandstorm-image.invalid/' + Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('') + '/';
++                    for (let i = 0; i < originals.length && images.length < 32; i++) {
++                        const original = originals[i];
++                        const url = original.currentSrc || original.src;
++                        if (!/^https?:/.test(url)) continue;
++                        // Ignore known tiny decoration/tracking pixels, but include lazy images.
++                        if (original.naturalWidth && original.naturalWidth < 64 && original.naturalHeight < 64) continue;
++                        const placeholder = prefix + images.length + '.image';
++                        copies[i].setAttribute('data-sandstorm-original-src', url);
++                        copies[i].setAttribute('src', placeholder);
++                        copies[i].removeAttribute('srcset');
++                        copies[i].closest('picture')?.querySelectorAll('source').forEach(source => source.remove());
++                        images.push({placeholder, url});
++                    }
++                    const result = {content: `<html>${clone.innerHTML}</html>`, images};
+
+                     if (selectors) {
+                         result.title = document.querySelector(selectors.title)?.innerText;
+@@ -69,8 +87,13 @@
                      chrome.runtime.sendMessage(result);
                  },
                  args: [isEuropresse ? this.#europresse.getPageSelectors() : null]
@@ -202,7 +272,7 @@
          if (content !== '') {
              options = Object.assign(options, { body: JSON.stringify(content) });
 @@ -44,7 +45,12 @@
- 
+
      #fetch (url, method, token, content) {
          const options = this.#getRequestOptions(method, token, content);
 -        return fetch(url, options).then(response => response.ok ? response.json() : response.json().then(err => Promise.reject(err)));
@@ -214,4 +284,4 @@
 +        });
      }
  };
- 
+

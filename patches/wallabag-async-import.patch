@@ -1,0 +1,119 @@
+# Target: pinned wallabag source in upstream.lock.
+# Purpose: Integrate the upstream Redis producer/consumers with Sandstorm background work.
+# The producer subscribes the initiating session to import activity; a response subscriber
+# ends its publishing marker. Markers expire after crashes. No article data enters notifications.
+# The worker keeps failed fetches in Redis instead of silently saving extraction error pages.
+# This is scoped to SANDSTORM_IMPORT_WORKER; interactive saves retain upstream semantics.
+# The import information panel describes Powerbox approvals and links to queue recovery.
+# Upgrade: Recheck producer DI, fetch-error sentinel, form routes and consumer queue names.
+# Validation: async import integration tests cover queue persistence, retry and notifications.
+
+--- a/src/Wallabag/ImportBundle/Redis/Producer.php
++++ b/src/Wallabag/ImportBundle/Redis/Producer.php
+@@ -16,10 +16,12 @@
+ class Producer implements ProducerInterface
+ {
+     private $queue;
++    private $requestStack;
+ 
+-    public function __construct(RedisQueue $queue)
++    public function __construct(RedisQueue $queue, \Symfony\Component\HttpFoundation\RequestStack $requestStack)
+     {
+         $this->queue = $queue;
++        $this->requestStack = $requestStack;
+     }
+ 
+     /**
+@@ -31,6 +33,19 @@
+      */
+     public function publish($msgBody, $routingKey = '', $additionalProperties = [])
+     {
++        require_once '/opt/app/integration/import-common.php';
++        $request = $this->requestStack->getCurrentRequest();
++        $redis = importRedis();
++        if ($request && !$request->attributes->has('_sandstorm_import_publisher')) {
++            $id = bin2hex(random_bytes(16));
++            $request->attributes->set('_sandstorm_import_publisher', $id);
++            importActivity($request->headers->get('X-Sandstorm-Session-Id', ''));
++        }
++        if ($request) {
++            $redis->zadd('sandstorm.import.publishing', [
++                $request->attributes->get('_sandstorm_import_publisher') => time() + 600,
++            ]);
++        }
+         $this->queue->sendJob($msgBody);
+     }
+ }
+--- a/src/Wallabag/ImportBundle/Import/AbstractImport.php
++++ b/src/Wallabag/ImportBundle/Import/AbstractImport.php
+@@ -131,6 +131,7 @@
+         try {
+             $this->contentProxy->updateEntry($entry, $url, $content, $this->disableContentUpdate);
+         } catch (\Exception $e) {
++            if (getenv('SANDSTORM_IMPORT_WORKER') === '1') throw $e;
+             $this->logger->error('Error trying to import an entry.', [
+                 'entry_url' => $url,
+                 'error_msg' => $e->getMessage(),
+--- a/src/Wallabag/CoreBundle/Helper/ContentProxy.php
++++ b/src/Wallabag/CoreBundle/Helper/ContentProxy.php
+@@ -56,6 +56,10 @@
+ 
+         if ((empty($content) || false === $this->validateContent($content)) && false === $disableContentUpdate) {
+             $fetchedContent = $this->graby->fetchContent($url);
++            if (getenv('SANDSTORM_IMPORT_WORKER') === '1' && $fetchedContent['html'] === $this->fetchingErrorMessage) {
++                // Preserve the queued entry for retry after a missing grant or fetch error.
++                throw new \RuntimeException('Imported article could not be fetched.');
++            }
+ 
+             $fetchedContent['title'] = $this->sanitizeContentTitle(
+                 $fetchedContent['title'],
+--- a/src/Wallabag/ImportBundle/Resources/views/Import/_information.html.twig
++++ b/src/Wallabag/ImportBundle/Resources/views/Import/_information.html.twig
+@@ -1,15 +1,9 @@
+-{% set redis = craue_setting('import_with_redis') %}
+-{% set rabbit = craue_setting('import_with_rabbitmq') %}
+-{% set download_images = craue_setting('download_images_enabled') %}
+-
+-{% if redis or rabbit %}
+-    <div class="card-panel yellow darken-1 black-text">
+-        {{ 'import.worker.enabled'|trans }} <strong>{% if rabbit %}RabbitMQ{% elseif redis %}Redis{% endif %}</strong>
+-    </div>
+-{% endif %}
+-
+-{% if not redis and not rabbit and download_images %}
+-    <div class="card-panel orange darken-1 black-text">
+-        {{ 'import.worker.download_images_warning'|trans|raw }}
+-    </div>
+-{% endif %}
++{% if sandstormImport is defined %}
++    {% include '@WallabagCore/Sandstorm/imports.html.twig' with sandstormImport only %}
++{% else %}
++<div class="card-panel sandstorm-import-notice">
++    <p>Imports run in the background. Sandstorm will notify you when processing finishes.</p>
++    <p>Keep the library open to approve access to new websites.</p>
++    <a href="{{ path('import') }}">Import progress and retry</a>
++</div>
++{% endif %}
+--- a/src/Wallabag/ImportBundle/Controller/ImportController.php
++++ b/src/Wallabag/ImportBundle/Controller/ImportController.php
+@@ -24,9 +24,19 @@
+      */
+     public function importAction(ImportChain $importChain)
+     {
+-        return $this->render('@WallabagImport/Import/index.html.twig', [
++        require_once '/opt/app/integration/import-common.php';
++        $redis = importRedis();
++        $response = $this->render('@WallabagImport/Import/index.html.twig', [
+             'imports' => $importChain->getAll(),
++            'sandstormImport' => [
++                'counts' => importCounts($redis),
++                'paused' => (bool) $redis->exists('sandstorm.import.paused'),
++                'processed' => (int) $redis->get('sandstorm.import.processed'),
++            ],
+         ]);
++        $response->headers->set('Cache-Control', 'no-store');
++
++        return $response;
+     }
+ 
+     /**

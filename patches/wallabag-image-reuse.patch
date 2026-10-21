@@ -1,0 +1,25 @@
+# Target: wallabag 2.6.14
+# Purpose: Keep saved images local when replaying interrupted import save events.
+--- a/src/Wallabag/CoreBundle/Helper/DownloadImages.php
++++ b/src/Wallabag/CoreBundle/Helper/DownloadImages.php
+@@ -128,6 +128,20 @@
+ 
+         $folderPath = $this->baseFolder . '/' . $relativePath;
+ 
++        // Replayed save events must not fetch already-local images from the article host.
++        $localPrefix = $this->wallabagUrl . '/assets/images/' . $relativePath . '/';
++        if (strpos($imagePath, $localPrefix) === 0) {
++            $name = substr($imagePath, strlen($localPrefix));
++            if (preg_match('/^[a-zA-Z0-9-]+\.(?:jpg|png|webp|svg)$/D', $name) && is_file($folderPath . '/' . $name)) {
++                if ($thumbnail && !str_contains($name, '-thumb.')) {
++                    $thumb = preg_replace('/\.([^.]+)$/', '-thumb.$1', $name);
++                    if (is_file($folderPath . '/' . $thumb)) return $localPrefix . $thumb;
++                }
++                return $imagePath;
++            }
++        }
++
++
+         // build image path
+         $absolutePath = $this->getAbsoluteLink($url, $imagePath);
+         if (false === $absolutePath) {

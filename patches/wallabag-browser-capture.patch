@@ -1,3 +1,14 @@
+# Target: pinned source in upstream.lock.
+# Purpose: Save browser-provided HTML without a background API request waiting on Powerbox UI.
+# Coupling: extension/wallabagger-sandstorm.patch sends sandstorm_capture; RequestStack is autowired.
+# The fourth ContentProxy::updateEntry argument disables fetching, NOT HTML sanitization.
+# Keep cleanupHtml and normal authentication/ownership checks intact on upgrades.
+# The request attribute also suppresses image downloads for captured saves and metadata PATCHes;
+# ordinary UI saves and article/image deletion retain upstream behavior.
+# Upgrade: Check updateEntry's signature, sanitization order, and EntrySavedEvent dispatch paths.
+# Validation: tests/extension.cjs covers capture, sanitization, edits and bad/empty credentials/content;
+# tests/smoke.cjs covers ordinary HTTPS article/image fetching.
+
 --- a/src/Wallabag/ApiBundle/Controller/EntryRestController.php
 +++ b/src/Wallabag/ApiBundle/Controller/EntryRestController.php
 @@ -705,6 +705,11 @@

@@ -1,3 +1,13 @@
+# Target: pinned source in upstream.lock.
+# Purpose: Remove Graby's local-DNS SSRF check, which cannot resolve hosts inside a grain.
+# SECURITY: This is valid ONLY in Sandstorm's network-isolated grain with the explicit
+# capability proxy configured by wallabag-sandstorm.patch and wallabag-graby-client.patch.
+# The proxy/Sandstorm must enforce destination grants, including redirected requests.
+# Never reuse this patch in an ordinary network-enabled wallabag installation.
+# Keep redirect handling, history and HTTP error handling unchanged.
+# Upgrade: Re-audit all Graby clients and redirect paths; do not add a direct-network fallback.
+# Validation: tests/smoke.cjs exercises HTTPS fetching through a Powerbox grant.
+
 --- a/vendor/j0k3r/graby/src/Extractor/HttpClient.php
 +++ b/vendor/j0k3r/graby/src/Extractor/HttpClient.php
 @@ -92,7 +92,9 @@

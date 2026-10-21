@@ -1,7 +1,12 @@
 /*
  * Warm — a local, dependency-free skin for wallabag 2.6's Material templates.
  * Loaded through upstream's custom.css hook, after material.css.
- * :root specificity also overrides upstream's .dark-theme rules.
+ * :root deliberately raises specificity above upstream's .dark-theme rules.
+ * Keep component selectors where Materialize uses more specific selectors;
+ * :is() groups below contain alternatives with equal specificity.
+ * !important handles upstream utilities, inline JS styles, and framework resets
+ * such as ripples and underlines. Do not move this override into a cascade layer:
+ * the unlayered upstream stylesheet would then take precedence.
  */
 :root {
   --paper: #faf8f4;
@@ -14,6 +19,11 @@
   --rule: #d8d2c7;
   --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --icon-size: 20px;
+  --page-gutter: 28px;
+  --list-gutter: 10px;
+  --reader-rail-width: 48px;
+  --reader-open-width: 300px;
   color-scheme: light;
 }
 :root.dark-theme {
@@ -30,11 +40,17 @@
 :root body { background: var(--paper); color: var(--ink); font-family: var(--sans); }
 :root #content, :root .results-item { color: var(--ink); }
 :root a { color: var(--link); }
-:root a, :root button, :root input { -webkit-tap-highlight-color: transparent; }
+:root :is(a, button, input) { -webkit-tap-highlight-color: transparent; }
 :root :focus-visible { outline: 2px solid var(--clay); outline-offset: 4px; }
 :root ::selection { background: var(--linen); color: var(--ink); }
-:root h1, :root h2, :root h3, :root h4 {
+:root :is(h1, h2, h3, h4) {
   font-family: var(--sans); font-weight: 400; letter-spacing: -.025em;
+}
+:root .sandstorm-extensions h2 {
+  font-size: 18px; line-height: 1.35; margin: 24px 0 10px;
+}
+:root #extension-credentials {
+  width: 100%; height: 72px; border: 1px solid var(--rule);
 }
 :root .cyan, :root .cyan.darken-1, :root .cyan.darken-2 {
   background-color: var(--paper) !important; color: var(--ink);
@@ -62,30 +78,28 @@
 :root #main .logo img { display: block; width: 80px; height: 80px; }
 :root .items-number { font-size: 12px; font-variant-numeric: tabular-nums; }
 :root nav { border-bottom: 1px solid var(--rule); }
-:root .nav-panel-actions { padding: 25px 28px; gap: 12px; }
+:root .nav-panel-actions { padding: 20px var(--page-gutter); gap: 12px; }
 :root .nav-panel-top { flex: 1; }
-:root .nav-panel-buttom { flex-grow: 0; }
-:root .toggle-add-url-container { flex-grow: 0; }
+:root :is(.nav-panel-buttom, .toggle-add-url-container) { flex-grow: 0; }
 :root .toggle-add-url { width: auto; }
 :root .nav-panels .action { font: 28px/1.2 var(--sans); letter-spacing: -.035em; }
 :root nav a, :root nav button, :root .nav-panel-item .add,
 :root .nav-panel-item .search, :root .nav-panels .close { color: var(--ink) !important; }
-:root .nav-panel-item a, :root .nav-panel-item button { border-radius: 3px; }
-:root .nav-panel-item a:hover, :root .nav-panel-item button:hover { background: var(--linen); }
+:root .nav-panel-item :is(a, button) { border-radius: 3px; }
+:root .nav-panel-item :is(a, button):hover { background: var(--linen); }
 :root button, :root .btn, :root .btn-large, :root .btn-flat,
 :root nav a, :root .side-nav a, :root .dropdown-content li { transition: none; }
-:root .nav-panel-add, :root .nav-panel-search { background: var(--linen); }
+:root :is(.nav-panel-add, .nav-panel-search) { background: var(--linen); }
 :root .dropdown-content { border: 1px solid var(--rule); background: var(--paper); }
 :root .dropdown-content li { background: var(--paper); }
-:root .dropdown-content li > a, :root .dropdown-content li > span { color: var(--ink); font-size: 14px; }
+:root .dropdown-content li > :is(a, span) { color: var(--ink); font-size: 14px; }
 :root .dropdown-content li > a > i { margin-right: 8px; }
-:root .dropdown-content li:hover, :root .dropdown-content li.active,
-:root .dropdown-content li.selected { background: var(--linen); }
+:root .dropdown-content li:is(:hover, .active, .selected) { background: var(--linen); }
 :root .divider { background-color: var(--rule); }
 :root .divider + .divider, :root .dropdown-content > .divider:last-child { display: none; }
 
-/* Unboxed editorial entries: images, generous titles, metadata and a fine rule. */
-:root .index main div#content { padding: 12px 28px 40px; }
+/* Library: shared content spacing, grid cards, compact list rows, and tags. */
+:root .index main div#content { padding: 12px var(--page-gutter) 40px; }
 :root .results { padding: 16px 0 24px; font-size: 13px; color: var(--muted); }
 :root .nb-results { align-items: center; gap: 12px; }
 :root .entries-row { padding: 0; gap: 36px 28px; }
@@ -96,7 +110,7 @@
 }
 :root .entry-card { border-bottom: 1px solid var(--rule); }
 :root .card .card-content { padding: 22px 0 18px; }
-:root .card .card-content .card-title, :root .card .card-reveal .card-title {
+:root .card :is(.card-content, .card-reveal) .card-title {
   font-family: var(--sans); font-size: 20px; font-weight: 400;
   line-height: 1.35; max-height: none; letter-spacing: -.015em;
 }
@@ -104,38 +118,34 @@
 :root .card .card-title a:hover, :root .card a.card-title:hover { color: var(--link); }
 :root .card .card-content .original { font: 12px/1.8 var(--sans); color: var(--muted); margin-top: 10px; }
 :root .card .card-image { height: 12em; }
-:root .card .preview, :root .card-stacked .preview { background-color: var(--linen); border-radius: 0; }
+:root :is(.card, .card-stacked) .preview { background-color: var(--linen); border-radius: 0; }
 :root .card .preview.preview--default { background-image: none !important; filter: none; position: relative; }
-:root .preview--default::after {
+:root .card .preview--default::after {
   content: "w."; position: absolute; inset: 0; display: grid; place-items: center;
   font: italic 42px var(--serif); color: var(--sage);
 }
-:root .card .card-action { padding: 12px 0; border-top: 1px solid var(--rule); background: transparent !important; }
 :root .card .card-action {
+  padding: 12px 0; border-top: 1px solid var(--rule); background: transparent !important;
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
 }
 :root .card .card-action .tools { float: none !important; margin: 0 0 0 auto; align-items: center; }
 /* Links and buttons inside forms must share a center, not inline baselines. */
-:root .card-action .tools li, :root .card-action .tools form,
-:root .card-stacked .tools-list li, :root .card-stacked .tools-list form {
+:root .card-action .tools :is(li, form),
+:root .card-stacked .tools-list :is(li, form) {
   display: flex; align-items: center;
 }
 :root .card-stacked .tools-list li { gap: 8px; }
 :root .card-action .tool, :root .card-stacked .tools-list .tool {
-  display: inline-flex; align-items: center; justify-content: center; line-height: 1;
+  line-height: 1;
 }
-:root .card-action .material-icons, :root .card-stacked .tools-list .material-icons {
-  display: inline-flex; align-items: center; justify-content: center;
-}
-:root .card-action .reading-time,
-:root .card-action .card-reading-time, :root .card-action .card-created-at { align-items: center; }
+:root .card-action :is(.reading-time, .card-reading-time, .card-created-at) { align-items: center; }
 :root .card .card-action a, :root .card .card-action a:hover { color: var(--ink); }
 :root .reading-time { color: var(--muted); font-size: 12px; }
 :root .collection { border: 0; margin: 0; }
 :root .collection .collection-item { border-bottom: 1px solid var(--rule); padding: 10px 0; width: 100%; }
 /* Extend the row background into the gutter without shifting its contents. */
-:root .entries.collection { margin-inline: -10px; }
-:root .entries.collection .collection-item { padding-inline: 10px; }
+:root .entries.collection { margin-inline: calc(-1 * var(--list-gutter)); }
+:root .entries.collection .collection-item { padding-inline: var(--list-gutter); }
 :root #content .collection .collection-item { min-height: 0; }
 :root .collection .collection-item:hover { background: var(--linen); }
 :root .card-stacked .card-preview {
@@ -149,38 +159,67 @@
 :root .card-stacked .card-title a { color: var(--ink); }
 :root .card-stacked .card-content .original { color: var(--muted); font-size: 12px; }
 :root .card-stacked ul.tools-list { display: inline; }
-:root .card.archived, :root .card-stacked.archived { opacity: .75; }
+:root :is(.card, .card-stacked).archived { opacity: .75; }
+
+:root .card-panel.sandstorm-import-notice {
+  background: var(--linen); border-radius: 3px;
+}
+:root section.sandstorm-import-notice {
+  position: relative; padding: 24px;
+  border: 1px solid var(--rule); border-left: 3px solid var(--sage);
+}
+:root .sandstorm-import-status[data-state="attention"] { border-left-color: var(--clay); }
+:root #import-status-heading { font-size: 18px; line-height: 1.3; margin: 0 40px 8px 0; }
+:root .import-status-summary { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
+:root .import-status-counts { margin: 14px 0 18px; font-size: 14px; }
+:root .import-status-counts strong { font-weight: 600; font-variant-numeric: tabular-nums; }
+:root .import-status-footer, :root .import-status-footer form {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+}
+:root .import-status-footer { justify-content: space-between; }
+:root .import-status-total { color: var(--muted); font-size: 12px; }
+@media (max-width: 600px) {
+  :root section.sandstorm-import-notice { padding: 18px; }
+}
+:root .sandstorm-import-refresh {
+  position: absolute; top: 12px; right: 12px;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; color: var(--muted);
+  border: 1px solid var(--rule); border-radius: 3px;
+}
+:root .sandstorm-import-refresh:hover {
+  background: var(--paper); color: var(--ink);
+}
+
+/* Tags: shared colors, with separate grid and reader shapes. */
 :root .chip, :root .card-entry-labels li, :root .card-tag-labels li,
 :root .card .card-entry-labels-hidden li, :root .card-stacked div.metadata .chip,
-:root #article .entry-info .chip-label, :root #article .entry-info .chip-action {
+:root #article .entry-info :is(.chip-label, .chip-action) {
   background: var(--linen); color: var(--ink); border-radius: 2px;
 }
-:root .chip a, :root .chip i, :root .card-entry-labels a, :root .card-tag-labels a,
+:root .chip :is(a, i), :root .card-entry-labels a, :root .card-tag-labels a,
 :root .card-tag-labels button, :root .card-entry-labels-hidden a,
-:root #list .chip a, :root #article .entry-info .chip a,
-:root #article .entry-info .chip i { color: var(--ink); }
-:root .card-stacked div.metadata .chip a,
-:root .card-stacked div.metadata .chip i { color: var(--ink); }
+:root #list .chip a, :root #article .entry-info .chip :is(a, i) { color: var(--ink); }
+:root .card-stacked div.metadata .chip :is(a, i) { color: var(--ink); }
 :root .card-entry-labels li { border-radius: 0 2px 2px 0; }
 :root #article .entry-info .chip { align-items: stretch; }
 :root #article .entry-info .chip > form { display: flex; height: 100%; margin: 0; }
-:root #article .entry-info .chip-label,
-:root #article .entry-info .chip-action {
-  display: inline-flex; align-items: center; justify-content: center; height: 100%; line-height: 1;
+:root #article .entry-info :is(.chip-label, .chip-action) {
+  height: 100%; line-height: 1;
 }
 :root #article .entry-info .chip-label { border-radius: 2px 0 0 2px; }
 :root #article .entry-info .chip-action { border-radius: 0 2px 2px 0; }
 :root #article .entry-info .chip-action .material-icons {
-  display: inline-flex; align-items: center; justify-content: center; height: 20px; line-height: 1;
+  height: var(--icon-size); line-height: 1;
 }
 
 /* Controls keep their original behavior, without elevation or shouting labels. */
-:root .btn, :root .btn-large, :root .btn-flat, :root .btn-floating {
+:root :is(.btn, .btn-large, .btn-flat, .btn-floating) {
   background: var(--linen) !important; color: var(--ink) !important;
   border: 1px solid var(--rule); border-radius: 2px;
   text-transform: none; letter-spacing: 0; box-shadow: none;
 }
-:root .btn:hover, :root .btn-large:hover, :root .btn-flat:hover { border-color: var(--sage); box-shadow: none; }
+:root :is(.btn, .btn-large, .btn-flat):hover { border-color: var(--sage); box-shadow: none; }
 :root .btn-floating i { color: inherit; }
 :root .btn:disabled, :root button:disabled { opacity: .5; cursor: not-allowed; }
 :root input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
@@ -190,7 +229,7 @@
 :root input:focus:not([readonly]), :root textarea:focus:not([readonly]) {
   border-color: var(--sage) !important; box-shadow: 0 1px 0 var(--sage) !important;
 }
-:root input::placeholder, :root textarea::placeholder, :root label { color: var(--muted); }
+:root :is(input, textarea)::placeholder, :root label { color: var(--muted); }
 :root .select-wrapper span.caret { color: var(--muted); }
 :root div.input-field:not(.nav-panel-item):not(.with-checkbox) {
   display: flex; flex-direction: column;
@@ -199,17 +238,13 @@
   position: static; transform: none; order: -1; margin-bottom: 6px;
 }
 :root .input-field:not(.nav-panel-item) input:not([type="checkbox"]):not([type="radio"]),
-:root textarea.materialize-textarea {
+:root textarea.materialize-textarea,
+:root .nav-panels :is(.nav-panel-add, .nav-panel-search) input:is([type="url"], [type="text"]) {
   box-sizing: border-box; border: 1px solid var(--rule); border-radius: 2px;
   background: var(--paper); padding: 0 10px;
 }
-:root .nav-panels .nav-panel-add input[type="url"],
-:root .nav-panels .nav-panel-add input[type="url"]:focus,
-:root .nav-panels .nav-panel-search input[type="text"],
-:root .nav-panels .nav-panel-search input[type="text"]:focus {
-  box-sizing: border-box; min-width: 0; padding: 0 12px;
-  border: 1px solid var(--rule); border-radius: 2px;
-  background: var(--paper); box-shadow: none !important;
+:root .nav-panels :is(.nav-panel-add, .nav-panel-search) input:is([type="url"], [type="text"]) {
+  min-width: 0; padding-inline: 12px; box-shadow: none !important;
 }
 :root .input-field label.active, :root .input-field input:focus + label { color: var(--muted); }
 :root [type="checkbox"]:checked + label::before { border-right-color: var(--sage); border-bottom-color: var(--sage); }
@@ -223,7 +258,38 @@
 :root .pagination li.active { background: var(--linen); border-bottom: 2px solid var(--clay); border-radius: 0; }
 :root .pagination li.active span, :root .pagination li a { color: var(--ink); }
 :root .pagination li:not(.active) a:hover { background: var(--linen); }
-:root .toast, :root .material-tooltip { background: var(--ink); color: var(--paper); border-radius: 2px; box-shadow: none; }
+:root :is(.toast, .material-tooltip) { background: var(--ink); color: var(--paper); border-radius: 2px; box-shadow: none; }
+
+/* Filters: compact, left-aligned fields with ordinary square checkboxes. */
+:root #filters { padding: 20px 16px; text-align: left; }
+:root #filters h4 { margin: 0 0 8px; font-size: 20px; line-height: 1.3; text-align: left; }
+:root #filters .center-align { text-align: left; }
+:root #filters .row { margin: 0 -4px; }
+:root #filters .row > .col { padding-inline: 4px; }
+:root #filters a:not(.btn-flat) { padding: 0; height: auto; font-size: 13px; line-height: 1.5; margin-bottom: 12px; }
+:root #filters label { font-size: 12px; line-height: 1.5; }
+:root #filters .input-field { margin-top: 4px; margin-bottom: 10px; }
+:root #filters div.with-checkbox {
+  display: flex; align-items: center; gap: 8px; width: 100%; height: auto;
+  min-height: 28px; margin: 0;
+}
+:root #filters input[type="checkbox"] {
+  position: static; opacity: 1; pointer-events: auto; appearance: auto;
+  flex: 0 0 14px; width: 14px; height: 14px; margin: 0;
+}
+:root #filters input[type="checkbox"] + label {
+  position: static; transform: none; padding: 4px 0; height: auto;
+  font-size: 13px; line-height: 20px; color: var(--ink);
+}
+:root #filters input[type="checkbox"] + label::before,
+:root #filters input[type="checkbox"] + label::after { display: none; }
+:root #filters input:not([type="checkbox"]):not([type="hidden"]),
+:root #filters select { height: 32px; margin-bottom: 0; font-size: 13px; }
+:root #filters :is(.btn, .btn-flat) {
+  height: 32px; line-height: 30px; padding: 0 10px; font-size: 13px;
+}
+
+/* Tooltips: JS still controls visibility, but not visual animation. */
 :root .material-tooltip {
   /* Materialize uses JS-driven inline opacity/transforms, not CSS transitions.
    * Keep its positioning, visibility and hover delay, but suppress the motion. */
@@ -234,9 +300,17 @@
 }
 :root .material-tooltip .backdrop { display: none; }
 :root .backdrop { background: var(--ink); }
+
+/* Date picker */
+:root :is(.picker__box, .picker__footer) { background: var(--paper); border-color: var(--rule); color: var(--ink); }
+:root .picker__day--selected, :root .picker__day--selected:hover,
+:root .picker--focused .picker__day--selected { background: var(--linen); color: var(--ink); border-radius: 2px; }
+:root :is(.picker__close, .picker__today, .picker__day--today) { color: var(--link); }
+
+/* Footer */
 :root footer.page-footer { border-top: 1px solid var(--rule); }
 :root footer .footer-copyright {
-  background: transparent; color: var(--muted); font-size: 12px; padding: 16px 28px;
+  background: transparent; color: var(--muted); font-size: 12px; padding: 16px var(--page-gutter);
 }
 :root footer .container { width: 100%; max-width: none; margin: 0; padding: 0; }
 :root footer .row { display: flex; align-items: center; gap: 24px; margin: 0; }
@@ -261,23 +335,18 @@
 }
 :root .reader-mode .material-icons,
 :root .reader-mode .collapsible-body li a i.material-icons {
-  display: inline-flex; align-items: center; justify-content: center;
-  flex: 0 0 20px; float: none; margin: 0; height: 20px; line-height: 1;
-}
-:root .entry .fixed-action-btn .btn-floating {
-  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 var(--icon-size); float: none; margin: 0; height: var(--icon-size); line-height: 1;
 }
 :root .entry .fixed-action-btn .btn-floating .material-icons {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 20px; height: 20px; line-height: 1;
+  width: var(--icon-size); height: var(--icon-size); line-height: 1;
 }
 @media (min-width: 993px) {
-  :root .reader-mode:not(:hover) { width: 48px !important; }
-  :root .reader-mode:hover { width: 300px !important; }
-  :root .entry main div#content { padding-left: 48px; }
+  :root .reader-mode:not(:hover) { width: var(--reader-rail-width) !important; }
+  :root .reader-mode:hover { width: var(--reader-open-width) !important; }
+  :root .entry main div#content { padding-left: var(--reader-rail-width); }
   :root .reader-mode .collapsible-header {
-    /* The 48px rail has two 1px borders: reserve its inner width for the icon. */
-    display: grid; grid-template-columns: 46px minmax(0, 1fr);
+    /* Reserve the rail width minus its two borders for an unmoving icon column. */
+    display: grid; grid-template-columns: calc(var(--reader-rail-width) - 2px) minmax(0, 1fr);
     gap: 0; padding-inline: 0 12px;
   }
   :root .reader-mode .collapsible-header > .material-icons { justify-self: center; }
@@ -298,39 +367,49 @@
 :root blockquote { border-left: 2px solid var(--clay); }
 :root #article pre, :root .hljs { background: var(--linen); color: var(--ink); border-color: var(--rule); border-radius: 0; }
 :root table.striped > tbody > tr:nth-child(odd) { background: var(--linen); }
-:root th, :root td { border-color: var(--rule); }
+:root :is(th, td) { border-color: var(--rule); }
+
+/* Shared centering keeps links, form buttons and their glyphs on the same axis. */
+:root .card-action .tool, :root .card-stacked .tools-list .tool,
+:root .card-action .material-icons, :root .card-stacked .tools-list .material-icons,
+:root #article .entry-info :is(.chip-label, .chip-action),
+:root #article .entry-info .chip-action .material-icons,
+:root .reader-mode .material-icons,
+:root .reader-mode .collapsible-body li a i.material-icons,
+:root .entry .fixed-action-btn .btn-floating,
+:root .entry .fixed-action-btn .btn-floating .material-icons {
+  display: inline-flex; align-items: center; justify-content: center;
+}
 :root .material-icons[data-warm-icon] {
-  font-size: 0 !important; width: 20px; min-width: 20px; min-height: 20px; vertical-align: middle;
+  font-size: 0 !important; width: var(--icon-size); min-width: var(--icon-size); min-height: var(--icon-size); vertical-align: middle;
 }
 :root .material-icons[data-warm-icon="star"] { color: var(--clay); }
-:root .picker__box, :root .picker__footer { background: var(--paper); border-color: var(--rule); color: var(--ink); }
-:root .picker__day--selected, :root .picker__day--selected:hover,
-:root .picker--focused .picker__day--selected { background: var(--linen); color: var(--ink); border-radius: 2px; }
-:root .picker__close, :root .picker__today, :root .picker__day--today { color: var(--link); }
 :root .material-icons[data-warm-icon]::before {
-  content: ""; display: inline-block; width: 20px; height: 20px;
+  content: ""; display: inline-block; width: var(--icon-size); height: var(--icon-size);
   background: currentColor; mask: var(--warm-icon) center / contain no-repeat;
   vertical-align: middle;
 }
+
+/* Responsive layout */
 @media (max-width: 992px) {
-  :root .nav-panel-actions { padding: 16px; }
+  :root { --page-gutter: 16px; }
+  :root .nav-panel-actions { padding: 12px var(--page-gutter); }
   :root .nav-panels .action { font-size: 24px; }
-  :root .index main div#content { padding: 8px 16px 28px; }
+  :root .index main div#content { padding: 8px var(--page-gutter) 28px; }
   /* Avoid stacking the count's bottom margin with the results row's spacing. */
   :root #content:has(> .entries.collection) > .results {
     padding-bottom: 6px; margin-bottom: 0; row-gap: 8px;
   }
   :root #content:has(> .entries.collection) .nb-results { margin-bottom: 0; }
-  :root footer .footer-copyright { padding-inline: 16px; }
   :root #article { padding: 12px 22px 80px; }
   :root #article > header > h1 { font-size: 32px; }
 }
 @media (max-width: 600px) {
   :root .entries-row { grid-template-columns: minmax(0, 1fr); gap: 28px; }
   :root .nav-panel-buttom { width: 100%; }
-  :root .nav-panel-item a, :root .nav-panel-item button { padding: 10px; }
+  :root .nav-panel-item :is(a, button) { padding: 10px; }
   :root .card-stacked { row-gap: 6px; }
-  :root .card-stacked div.metadata { height: auto; flex-wrap: wrap; }
+  :root .card-stacked div.metadata { flex-wrap: wrap; }
   :root #article article { font-size: 18px; }
 }
 @media (prefers-reduced-motion: reduce) {

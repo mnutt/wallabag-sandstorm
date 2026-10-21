@@ -1,0 +1,39 @@
+# Target: pinned source in upstream.lock.
+# Purpose: Resize embedded browser-captured images and generate local previews without outbound requests.
+# Order: After wallabag-browser-capture.patch; HTML still passes through upstream sanitization.
+# Metadata PATCHes have no image map and remain download-free.
+# Validation: tests/captured-images.php and tests/extension.cjs.
+--- a/src/Wallabag/ApiBundle/Controller/EntryRestController.php
++++ b/src/Wallabag/ApiBundle/Controller/EntryRestController.php
+@@ -723,6 +723,11 @@
+         }
+ 
+         $data = $this->retrieveValueFromRequest($request);
++        if ($capture) {
++            require_once '/opt/app/integration/SandstormCapturedImages.php';
++            [$data['content'], $capturedImages] = \Wallabag\CoreBundle\Helper\SandstormCapturedImages::prepare((string) $data['content']);
++            $request->attributes->set('_sandstorm_captured_images', $capturedImages);
++        }
+ 
+         try {
+             $contentProxy->updateEntry(
+--- a/src/Wallabag/CoreBundle/Event/Subscriber/DownloadImagesSubscriber.php
++++ b/src/Wallabag/CoreBundle/Event/Subscriber/DownloadImagesSubscriber.php
+@@ -42,7 +42,16 @@
+     {
+         $request = $this->requestStack->getCurrentRequest();
+         if ($request && $request->attributes->get('_sandstorm_capture')) {
+-            // Browser saves must not wait for an interactive outbound Powerbox grant.
++            // Process only supplied bytes; never request outbound access during browser saves.
++            if ($request->attributes->has('_sandstorm_captured_images')) {
++                require_once '/opt/app/integration/SandstormCapturedImages.php';
++                $entry = $event->getEntry();
++                \Wallabag\CoreBundle\Helper\SandstormCapturedImages::save(
++                    $entry, $this->downloadImages, $request->attributes->get('_sandstorm_captured_images')
++                );
++                $this->em->persist($entry);
++                $this->em->flush();
++            }
+             return;
+         }
+         if (!$this->enabled) {

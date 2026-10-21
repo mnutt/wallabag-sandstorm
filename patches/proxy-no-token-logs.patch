@@ -1,3 +1,9 @@
+# Target: pinned source in upstream.lock.
+# Purpose: Keep Powerbox capability tokens and request/reply payloads out of grain logs.
+# Scope: Remove only payload logging; retain connection and stale-RPC diagnostics.
+# Upgrade: Audit new logging in the proxy too, including errors that print full messages.
+# Validation: Apply against the proxy commit in upstream.lock; exercise a website grant.
+
 --- a/pb-request.go
 +++ b/pb-request.go
 @@ -156,7 +156,6 @@

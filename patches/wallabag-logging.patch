@@ -1,3 +1,10 @@
+# Target: pinned source in upstream.lock.
+# Purpose: Avoid retaining debug-level HTTP/content dumps when a request encounters an error.
+# Keep warning/error diagnostics, with three rotating daily log files to limit accumulation.
+# This is retention by file count, NOT a strict byte limit or a guarantee of secret redaction.
+# Upgrade: Check Monolog handler configuration and audit sensitive fields in warning/error logs.
+# Validation: Production container warmup; runtime failures should still reach the warning log.
+
 --- a/app/config/config_prod.yml
 +++ b/app/config/config_prod.yml
 @@ -14,13 +14,10 @@

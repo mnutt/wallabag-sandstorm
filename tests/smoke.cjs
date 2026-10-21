@@ -23,6 +23,17 @@ const assert = require('node:assert/strict');
     assert.equal(await frame.evaluate(async () => (await fetch('/config')).status), 403);
     const title = 'A Bold GNU Head by Aurélio A. Heckert - GNU Project';
     await frame.locator('#nav-btn-add').click();
+    // Exercise a server-side form rejection (HTTP 200) without discarding input.
+    await frame.locator('#entry_url').fill('https://form-validation.invalid/article');
+    const csrf = frame.locator('form[name="entry"] input[name="entry[_token]"]');
+    await csrf.evaluate(input => { input.value = 'invalid-test-token'; });
+    await frame.locator('form[name="entry"]').evaluate(form => {
+      form.requestSubmit();
+    });
+    await frame.getByRole('status').filter({ hasText: 'The CSRF token is invalid.' }).waitFor();
+    assert.equal(await frame.locator('#entry_url').inputValue(), 'https://form-validation.invalid/article');
+    assert.equal(await frame.locator('form[name="entry"] button[type="submit"]').isEnabled(), true);
+    assert.notEqual(await csrf.inputValue(), 'invalid-test-token');
     await frame.locator('#entry_url').fill('https://www.gnu.org/graphics/heckert_gnu.html');
     await frame.locator('form[name="entry"] button[type="submit"]').click();
     // A fresh grain asks for a grant. An already-granted grain should reuse it.

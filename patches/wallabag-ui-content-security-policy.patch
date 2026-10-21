@@ -1,0 +1,18 @@
+# Target: pinned wallabag base template.
+# Purpose: Close Sandstorm's permissive img-src/media-src defaults for saved content.
+# The bridge supplies the other directives, including same-origin scripts/connections
+# and its shell origin for credential frames. A meta policy intersects with that
+# policy; response CSP headers are controlled by the bridge. Place outside the head
+# block so child templates cannot drop it, before any resource-loading markup.
+# Order: After wallabag-theme-persistence.patch.
+# Validation: tests/content-security-policy.cjs exercises real browser enforcement.
+--- a/src/Wallabag/CoreBundle/Resources/views/base.html.twig
++++ b/src/Wallabag/CoreBundle/Resources/views/base.html.twig
+@@ -10,6 +10,7 @@
+         {% if app.request.attributes.has('_sandstorm_theme') %}
+             <meta name="sandstorm-theme-token" content="{{ csrf_token('sandstorm_theme') }}">
+         {% endif %}
++        <meta http-equiv="Content-Security-Policy" content="img-src 'self' data: blob:; media-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+         {% block head %}
+             <meta name="viewport" content="initial-scale=1.0">
+             <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />

@@ -12,13 +12,15 @@ Install `spktool` and Lima, then run:
 
 ```sh
 spktool vm up
+extension/build.sh # requires Node.js 22+ on the host
 spktool dev
 ```
 
 The development server is http://local.sandstorm.io:6091. Sign in with a local
 Dev account, open Apps → wallabag, and create a reading library. Keep `spktool dev`
 running while testing. The VM uses Debian 12, PHP 8.2, nginx, and SQLite. Go from
-Debian backports builds the HTTP adapter. Nothing runs directly on the host.
+Debian backports builds the HTTP adapter. The app runs in the VM; extension archives
+are built on the host.
 
 The app identity has already been initialized with `spktool init`.
 The signing key is stored by spktool outside this repository. Back it up: future
@@ -73,9 +75,17 @@ spktool verify dist/wallabag.spk
 ```
 
 The manifest explicitly includes the full application, PHP extensions, integration
-files, and proxy executable in addition to traced system dependencies. Review
-that inclusion list after changing the runtime. App-market metadata and publication
-are not part of the prototype.
+files, license notices, and proxy executable in addition to traced system dependencies.
+Review that inclusion list after changing the runtime. The manifest includes icons,
+demo-library screenshots, descriptions, categories, changelog, and maintainer contact.
+Metadata assets live in `.sandstorm/assets/`; the SVG derives from wallabag's
+MIT-licensed logo. The source URL is the intended public repository
+`https://github.com/sandstorm-org/wallabag-sandstorm`.
+
+Packages are signed with the existing app key. Optional PGP author verification is
+not configured; it requires a separate author signature and public keyring. Building
+a package does not publish it to the app market. Original integration code is MIT
+licensed (see `LICENSE`); bundled projects retain their own licenses.
 
 To upgrade wallabag, update its URL, version, and checksum in `upstream.lock`,
 refresh patches against that release, and increment the manifest's `appVersion`
@@ -86,12 +96,124 @@ are not snapshot-pinned, so this is not yet a bit-for-bit reproducible build.
 
 ## Prototype limits
 
-Unmodified mobile apps and browser extensions, background imports that survive grain suspension,
-and a read-only library UI require further integration. Reloading articles and large
-imports also need end-to-end testing with Powerbox. Back up grains before testing
+Unmodified mobile apps and browser extensions and a read-only library UI require
+further integration. Reloading articles and each upstream import format need more
+end-to-end testing with Powerbox. Back up grains before testing
 upgrades: migrations are applied forward and automatic downgrade is not supported.
 
+## Background imports
+
+Imports use wallabag's Redis producers and consumers. Redis listens only on a private
+Unix socket and persists jobs under `/var/lib/wallabag/redis` using an append-only log
+with synchronous fsync. One supervisor processes one entry at a time, launching a
+fresh PHP process per entry to bound memory and isolate failed Doctrine state.
+Uploaded files use unique temporary names under `/var/lib/wallabag/imports`, outside
+the web root, and are removed after parsing, including rejection or exceptions.
+Nginx also blocks the legacy `/uploads/import/` path.
+Existing grains have Redis imports enabled at startup too.
+
+The small `import-notify awake` helper holds a Sandstorm API wake lock while jobs run.
+It implements the same API as the `stay-awake` utility, with a readiness handshake
+and process exit on cancellation (the pinned utility does not signal cancellation
+to its caller). Cancelling its
+notification pauses processing until **Import → Resume**. Queue claims are
+atomic moves into a processing list; interrupted entries return to the queue on
+restart. Imports use upstream duplicate detection, so recovery is at-least-once,
+not an exactly-once transaction spanning both SQLite and Redis. A SQLite checkpoint
+is committed with each new entry, allowing retries to finish image processing
+without parsing the bookmark again. Image downloads run outside the transaction;
+already-local images are reused. A deleted unfinished entry is not recreated.
+
+Failed entries remain available under **Import → Retry unsuccessful entries**.
+Each entry has a five-minute execution limit, including time spent waiting for
+website permissions. Keep the library open to grant access to new sites; previously
+granted sites work in the background. Reopening a grain resumes pending work after
+a server restart. Images that cannot be fetched may retain external URLs in storage,
+but the app CSP blocks remote images and media when viewing saved articles.
+
+Newly downloaded raster images are re-encoded with GD and reduced to at most
+1,920 pixels wide, 8,192 pixels high, and four megapixels, preserving aspect ratio
+without upscaling. Library previews use separate thumbnails fitting within
+640 × 640 pixels; an image already downloaded for the article is reused. JPEG
+orientation is applied before metadata is stripped, and transparency is preserved.
+AVIF inputs become WebP. JPEG/WebP use quality 80; PNG remains lossless. GIFs are saved as static PNGs
+(the existing GD path also discarded animation). SVGs retain upstream sanitization.
+Existing saved images are not migrated. Static SVG
+responses carry `Content-Disposition: attachment; filename="image.svg"`, which
+Sandstorm preserves. This mitigates direct navigation to SVG documents while
+retaining image embedding (verified in Chromium). Run `python3 tests/svg-disposition.py`
+in the build VM to verify nginx response headers and access controls. Browser captures sanitize SVG uploads, remove nonlocal href references, and store
+them as local vectors; their previews use the same SVG file.
+
+Browser captures process uploaded image bytes
+through the same resizer, without fetching URLs from inside the grain. The extension
+uploads up to 32 raster or SVG images (3 MiB each, 12 MiB total) with a 12-second fetch
+budget. Unavailable or rejected images are omitted. Enable **Allow images from other sites**
+in extension settings to include images from CDNs that require browser host access.
+
+The processor rejects inputs above 20 MiB, 12 megapixels, or 16,384 pixels on
+either side, and checks a conservative memory estimate before decoding. These
+are resource guards, not isolation from GD decoder bugs; the HTTP client may
+already have buffered the response before the byte limit is checked. Failed
+processing may leave upstream external-image URLs in ordinary URL imports, but
+CSP blocks loading them. Browser captures remove remote image fallbacks entirely. Raster files are
+published with atomic renames only after successful encoding. Run `php tests/images.php`
+in the build VM to check resizing, previews, orientation, alpha, and input limits.
+
+The initiating session subscribes to import activity via `post-activity`.
+Completion uses `SandstormApi.backgroundActivity()` through the bridge, so it does
+not depend on that session remaining open. Events require library access, excluding
+feed-only readers. Notification delivery is attempted once per batch: an RPC error
+may occur after delivery, so automatic retries could generate duplicate alerts.
+The development Sandstorm server currently rejects desktop notifications for
+background events with a missing `appActivity.user` field; the bell entry is still
+created, but its sender renders as `undefined`. This package does not modify Sandstorm.
+
+`tests/imports.cjs` exercises a wallabag JSON upload, paused queue persistence across
+restart, resume, background processing, and the completion bell entry. Run with the
+same `GRAIN_URL`, `SANDSTORM_STORAGE_STATE`, and Playwright setup as the smoke test,
+against an empty disposable installed-package grain.
+`tests/import-controls.cjs` additionally checks malformed-entry retention, explicit
+retry, and cancellation through Sandstorm's ongoing notification. It intentionally
+leaves failed and paused test jobs behind; use a disposable grain.
+
+Browser backups are flattened into individual bookmark jobs before queuing. Upstream
+otherwise queues folders that its consumer discards as invalid, reporting completion
+without importing their bookmarks. `php tests/browser-import.php` in the build VM
+checks nested Firefox/Chrome backups, per-bookmark counts, and mark-as-read across
+fresh workers. Backups submitted before this fix must be uploaded again.
+
 ## Browser smoke test
+
+PHP responses expose duration-only diagnostic headers, using Sandstorm's allowed
+`X-Sandstorm-App-*` prefix: `Bootstrap-Ms` measures front-controller setup;
+`Kernel-Ms` measures Symfony handling (including lazy kernel boot, database work
+and rendering); `Upstream-Header-Seconds` measures nginx's wait for FPM headers,
+including worker queueing. The first two use a monotonic clock and exclude script
+compilation, response transfer and kernel termination. Compare their sum with the
+upstream duration and browser TTFB before changing worker counts or cache sizes.
+
+`tests/assets.cjs` uses the same environment variables as the browser smoke test
+below. It checks gzip negotiation and transfer sizes through an installed SPK,
+ETag reuse on repeated navigation, and uncompressed PHP HTML. nginx compresses
+static text assets only. The bridge does not forward ordinary `Cache-Control` or
+`Expires` response headers, so adding nginx freshness directives alone would not
+eliminate browser revalidation. Asset caches are also tied to Sandstorm's UI
+origin and cannot be assumed to survive a new session origin.
+
+Grain logs include `[startup]` checkpoints with UTC timestamps and elapsed wall
+time in milliseconds from launcher entry. Redis readiness is measured independently
+of proxy certificate generation. The HTTP-ready probe checks nginx's permission
+denial without booting Symfony; the later proxy `Called Connect()` message marks
+the browser's websocket connection, after the page has loaded its integration JS.
+Capture both when investigating cold-start latency. No request data is logged by
+these checkpoints.
+
+Run `php tests/csrf-scheme.php` in the build VM to check HTTP and HTTPS CSRF
+handling. The bridge supplies the external scheme; nginx passes it to PHP as
+`HTTPS`. Without that mapping, Symfony temporarily trusting loopback during
+inline form rendering changes the CSRF namespace on HTTPS installations, so
+tokens from the navigation form fail validation on submission.
 
 `tests/smoke.cjs` uses Playwright (tested with 1.63.0) and Chromium. Install
 Playwright in your test environment, or set `NODE_PATH` to an existing installation.
@@ -143,9 +265,29 @@ node tests/theme.cjs
 
 The test temporarily switches grid/list mode and restores the previous mode.
 
+Theme geometry is centralized alongside the palette in `warm.css`: icon size,
+page and list gutters, and collapsed/expanded reader widths. Component selectors
+retain the specificity needed to override the upstream stylesheet.
+
+For a CSS refactor, first save the old stylesheet outside the repository, then
+run the same test with `THEME_BASELINE_CSS=/tmp/warm-before.css`. The optional
+comparison checks computed styles and bounds on the same DOM, including
+pseudo-elements, responsive breakpoints, and print mode. It compares against
+`integration/warm.css` by default, or `THEME_CANDIDATE_CSS` if supplied. Transitions
+are disabled only during these comparisons; the normal UI checks still exercise
+hover and tooltip behavior.
+
 ## Browser extension
 
-Use the adapted Wallabagger build described in [extension/README.md](extension/README.md).
+Open **Account → Browser extensions** for Chrome/Chromium and Firefox development
+downloads, installation instructions, and Sandstorm-generated connection credentials.
+Credentials grant Collaborator access and are displayed by Sandstorm without exposing
+the token to app JavaScript. Connect within five minutes to activate them.
+See [extension/README.md](extension/README.md) for details.
+
+Before building the app, run `extension/build.sh` on the host (Node.js 22+ required).
+The app packages these ZIPs for download and refuses extension outputs whose source
+fingerprint is stale. Rebuild the extensions after changing anything in `extension/`.
 It uses a revocable Sandstorm webkey and captures the open browser page, so saving
 does not need an open grain or an interactive outbound website grant.
 
@@ -274,3 +416,33 @@ Back, and all three themes across fresh browser contexts with distinct iframe
 origins. It uses `GRAIN_URL` and `SANDSTORM_STORAGE_STATE`, like the other browser
 tests, and expects an unread article. `php tests/theme-state.php` runs in the VM
 and checks identity isolation, first-render cookies, and anonymous/API behavior.
+
+## Maintaining the patches
+
+Every patch includes a comment header explaining its intent, dependencies,
+upgrade assumptions, and relevant verification. Keep changes narrow and use
+upstream configuration or extension hooks where available. In particular, the
+Graby DNS-check removal is only valid with Sandstorm network isolation and our
+capability-aware client; it must never be carried into a normal wallabag deployment.
+
+Builds apply patches in C-locale filename order against checksum-pinned archives.
+They reject fuzzy matches and reversed/already-applied patches without prompting.
+Line-number offsets are allowed when the surrounding context still matches.
+Patch backups are not included in the generated application.
+
+Validate a patch update without replacing the running dev build:
+
+```sh
+# Inside the build VM (PHP and Go):
+python3 tests/patches.py --group proxy --group wallabag
+# Where the extension's Node tooling is available:
+python3 tests/patches.py --group extension
+```
+
+These checks use the cached archives, validate changed source syntax, and reject
+repeat application. Add `--compare-ref HEAD` for documentation/context-only edits
+to verify that the patched source is byte-for-byte identical to that revision.
+For upstream upgrades or behavior changes, also rebuild and run the grain/browser
+tests named in the patch headers: a clean patch application cannot detect an
+upstream API or security-semantics change. Vendor cache/client edits and the
+Wallabagger authentication/capture integration deserve particular attention.

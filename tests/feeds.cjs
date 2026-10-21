@@ -59,6 +59,7 @@ const assert = require('node:assert/strict');
       const starred = await feed('starred');
       const bearer = await feed('all', {}, 'Bearer ' + credentials.token);
       const first = await feed('all', { limit: '1' });
+      const unrecognized = await feed('all', { limit: '1', access_token: 'DO-NOT-REFLECT-THIS' });
       const second = await feed('all', { limit: '1', page: '2' });
       const empty = await feed('all', { tag: tag + '-missing' });
       const statuses = {};
@@ -70,8 +71,11 @@ const assert = require('node:assert/strict');
       statuses.invalidLimit = (await request('/feeds/all.xml?limit=101')).status;
       statuses.invalidPage = (await request('/feeds/all.xml?page=-1')).status;
       statuses.invalidOrigin = (await request('/feeds/all.xml?origin=javascript:alert(1)')).status;
+      for (const parameter of ['tag', 'origin', 'limit', 'page']) {
+        statuses['invalidArray_' + parameter] = (await request(`/feeds/all.xml?${parameter}[]=value`)).status;
+      }
       const head = await request('/feeds/all.xml', 'HEAD');
-      return { all, unread, archive, starred, bearer, first, second, empty, statuses, head,
+      return { all, unread, archive, starred, bearer, first, second, empty, unrecognized, statuses, head,
         leakedToken: all.text.includes(credentials.token) };
     }, { credentials, tag: tagSlug });
     result.statuses.noAuth = (await externalRequest(credentials.feedUrl)).status();
@@ -100,6 +104,8 @@ const assert = require('node:assert/strict');
     assert.equal(result.empty.guids.length, 0);
     assert.ok(result.all.descriptions.every(html => html.includes('RSS captured text')));
     assert.equal(result.leakedToken, false);
+    assert.equal(result.unrecognized.status, 200);
+    assert.equal(result.unrecognized.text.includes('DO-NOT-REFLECT-THIS'), false);
     for (const [name, status] of Object.entries(result.statuses)) {
       if (name.startsWith('invalid')) assert.equal(status, 400, name);
       else if (name === 'noAuth') assert.ok([401, 403].includes(status), name);

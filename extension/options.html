@@ -6,8 +6,10 @@
 <form id="connect">
 <label>Sandstorm API webkey <input id="webkey" type="password" required autocomplete="off" placeholder="https://api-….example.org/#token"></label>
 <label>Library address <input id="grain" type="url" required placeholder="https://sandstorm.example.org/grain/…"></label>
-<p>Use the library address from your browser’s address bar. Article links will open there.</p>
+<p>Use the library address from your browser’s address bar; an article or filtered-list address also works. Article links will open in that library.</p>
 <button>Connect</button>
 </form><p id="status" role="status"></p>
-<p>To save, open an article and click Wallabagger, or press Alt+Shift+W. It sends the page content you can currently see, including articles you are signed in to read. Linked images are not downloaded. For link context menus, open the link in a tab first.</p>
+<p>To save, open an article and click Wallabagger, or press Alt+Shift+W. It sends the page content you can currently see, including articles you are signed in to read. Images the browser can access are uploaded and resized in your library. Unavailable images are omitted; saved articles never load images from external sites. For link context menus, open the link in a tab first.</p>
+<p><button type="button" id="image-access">Allow images from other sites</button></p>
+<p>Optional: allow image downloads from sites such as image CDNs. This grants the extension access to HTTP and HTTPS sites; your API token is only sent to your library.</p>
 </main><script type="module" src="js/sandstorm-options.js"></script></html>

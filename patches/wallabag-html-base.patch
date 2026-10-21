@@ -1,0 +1,76 @@
+# Target: pinned Graby in upstream.lock.
+# Purpose: Honor document base URLs for fetched and browser-provided article images and links.
+# URLs still use the existing HTTP capability client; sanitization is unchanged.
+# Validation: tests/html-base.php.
+--- a/vendor/j0k3r/graby/src/Graby.php
++++ b/vendor/j0k3r/graby/src/Graby.php
+@@ -195,6 +195,7 @@
+     public function cleanupHtml($contentBlock, $url)
+     {
+         $originalContentBlock = $contentBlock instanceof \DOMElement ? $contentBlock->textContent : $contentBlock;
++        $linkBase = $contentBlock instanceof \DOMElement ? $url : $this->documentBase($contentBlock, $url);
+
+         // if content is pure html, convert it
+         if (!$contentBlock instanceof \DOMElement) {
+@@ -213,7 +214,7 @@
+         $this->extractor->readability->clean($contentBlock, 'select');
+
+         if ($this->config['rewrite_relative_urls']) {
+-            $this->makeAbsolute($url, $contentBlock);
++            $this->makeAbsolute($linkBase, $contentBlock);
+         }
+
+         // footnotes
+@@ -353,6 +354,7 @@
+             unset($singlePageResponse);
+         }
+
++        $linkBase = $this->documentBase($html, $effectiveUrl);
+         $this->logger->info('Attempting to extract content');
+
+         $extractResult = $this->extractor->process($html, $effectiveUrl);
+@@ -366,7 +368,7 @@
+
+         // ensure image is absolute
+         if (!empty($extractedImage)) {
+-            $extractedImage = $this->makeAbsoluteStr($effectiveUrl, $extractedImage);
++            $extractedImage = $this->makeAbsoluteStr($linkBase, $extractedImage);
+         }
+
+         // in case of no language were found, try using headers Content-Language
+@@ -463,7 +465,7 @@
+             return $res;
+         }
+
+-        $res['html'] = $this->cleanupHtml($contentBlock, $effectiveUrl);
++        $res['html'] = $this->cleanupHtml($contentBlock, $linkBase);
+
+         $this->logger->info('Returning data (most interesting ones): {data}', ['data' => ['html' => '(only length for debug): ' . \strlen($res['html'])] + $res]);
+
+@@ -797,6 +799,26 @@
+      * @param string      $base The base url
+      * @param \DOMElement $elem Element on which we'll retrieve the attribute
+      */
++    /** Resolve the first document base before extraction removes the head. */
++    private function documentBase($html, $url)
++    {
++        if (stripos($html, '<base') === false) return $url;
++        $previous = libxml_use_internal_errors(true);
++        try {
++            $document = new \DOMDocument();
++            if (!$document->loadHTML($html, LIBXML_NONET | LIBXML_COMPACT)) return $url;
++            $nodes = (new \DOMXPath($document))->query('//base[@href]');
++            if (!$nodes->length) return $url;
++            $base = UriResolver::resolve(new Uri($url), new Uri(trim($nodes->item(0)->getAttribute('href'))));
++            return in_array(strtolower($base->getScheme()), ['http', 'https'], true) ? (string) $base : $url;
++        } catch (\Throwable $e) {
++            return $url;
++        } finally {
++            libxml_clear_errors();
++            libxml_use_internal_errors($previous);
++        }
++    }
++
+     private function makeAbsolute($base, \DOMElement $elem)
+     {
+         foreach (['a' => 'href', 'img' => 'src', 'iframe' => 'src'] as $tag => $attr) {

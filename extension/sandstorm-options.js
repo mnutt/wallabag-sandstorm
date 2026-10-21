@@ -18,14 +18,22 @@ function safeUrl(value) {
     }
     return url;
 }
+let connecting = false;
 document.querySelector('#connect').addEventListener('submit', async event => {
     event.preventDefault();
+    if (connecting) return;
+    connecting = true;
+    const button = event.target.querySelector('button');
+    button.disabled = true;
     try {
         const webkey = safeUrl(document.querySelector('#webkey').value.trim());
         const token = webkey.hash.slice(1);
         if (!token || webkey.search || webkey.pathname !== '/') throw new Error('Paste the complete API webkey, including its #token.');
         const grain = safeUrl(document.querySelector('#grain').value.trim());
-        if (!/^\/grain\/[^/]+\/?$/.test(grain.pathname) || grain.hash || grain.search) throw new Error('Use the library address ending in /grain/ID.');
+        // Sandstorm's address bar may currently point to an article or filter.
+        const match = grain.pathname.match(/^\/grain\/([A-Za-z0-9_-]+)(?:\/|$)/);
+        if (!match) throw new Error('Use this library’s Sandstorm address containing /grain/ID.');
+        const grainUrl = grain.origin + '/grain/' + match[1];
         // Request only this API host, inside the user gesture.
         const granted = await browser.permissions.request({ origins: [webkey.origin + '/*'] });
         if (!granted) throw new Error('Access to this API host is required to connect.');
@@ -34,7 +42,7 @@ document.querySelector('#connect').addEventListener('submit', async event => {
         await api.init();
         Object.assign(api.data, api.defaultValues, {
             Sandstorm: true, Url: webkey.origin, ApiToken: token,
-            GrainUrl: grain.href.replace(/\/$/, ''), FetchLocallyByDefault: true,
+            GrainUrl: grainUrl, FetchLocallyByDefault: true,
             isTokenExpired: false, isFetchPermissionGranted: true
         });
         await api.checkUrl();
@@ -49,5 +57,15 @@ document.querySelector('#connect').addEventListener('submit', async event => {
         status.textContent = `Connected to wallabag ${api.data.ApiVersion}. Open an article and click Wallabagger to save it.`;
     } catch (error) {
         status.textContent = error.message;
+    } finally {
+        connecting = false;
+        button.disabled = false;
     }
+});
+
+document.querySelector('#image-access').addEventListener('click', async () => {
+    try {
+        const granted = await browser.permissions.request({origins:['http://*/*', 'https://*/*']});
+        status.textContent = granted ? 'Image downloads from other sites are enabled.' : 'Image access was not granted. Pages will still save.';
+    } catch (error) { status.textContent = error.message; }
 });

@@ -1,8 +1,17 @@
 #!/bin/bash
 set -euo pipefail
+# Patch order is part of the integration (see each patch's dependency comments).
+export LC_ALL=C
 cd /opt/app
 source upstream.lock
 mkdir -p .sandstorm/caches build
+if [[ ! -f dist/wallabagger-source.sha256 ]] || ! sha256sum --check --status dist/wallabagger-source.sha256; then
+    echo 'Run extension/build.sh on the host before building the app to prepare current browser-extension downloads.' >&2
+    exit 1
+fi
+for browser in chrome firefox; do
+    test -f "dist/wallabagger-sandstorm-$browser.zip"
+done
 # Concurrent spktool sessions share generated files; never rebuild them together.
 exec 9>.sandstorm/caches/build.lock
 flock 9
@@ -14,19 +23,23 @@ fetch() {
     fi
     echo "$checksum  $target" | sha256sum --check --status
 }
-proxy_key=$({ printf '%s\n' "$PROXY_URL" "$PROXY_SHA256"; sha256sum patches/proxy-*.patch; go version; } | sha256sum | cut -d' ' -f1)
+proxy_key=$({ printf '%s\n' "$PROXY_URL" "$PROXY_SHA256"; sha256sum patches/proxy-*.patch .sandstorm/build.sh; go version; } | sha256sum | cut -d' ' -f1)
 if [[ ! -x build/powerbox-http-proxy || ! -f build/proxy-version || "$(cat build/proxy-version)" != "$proxy_key" ]]; then
     fetch "$PROXY_URL" "$PROXY_SHA256" .sandstorm/caches/powerbox-http-proxy.tar.gz
     rm -rf build/proxy-source
     mkdir -p build/proxy-source
     tar -xzf .sandstorm/caches/powerbox-http-proxy.tar.gz -C build/proxy-source --strip-components=1
-    for patch in patches/proxy-*.patch; do patch -d build/proxy-source -p1 --fuzz=0 < "$patch"; done
+    for patch in patches/proxy-*.patch; do
+        patch -d build/proxy-source -p1 --batch --forward --fuzz=0 --no-backup-if-mismatch < "$patch"
+    done
     (cd build/proxy-source && go build -trimpath -o ../powerbox-http-proxy .)
     printf '%s\n' "$proxy_key" > build/proxy-version
 else
     echo 'HTTP adapter unchanged; reusing binary.'
 fi
-app_key=$({ printf '%s\n' "$WALLABAG_URL" "$WALLABAG_SHA256"; sha256sum integration/* patches/wallabag-*.patch .sandstorm/build.sh; php -v; php -m; } | sha256sum | cut -d' ' -f1)
+# Reuse the capability proxy's pinned module graph for the small background API helper.
+(cd build/proxy-source && go build -trimpath -ldflags='-s -w' -o ../import-notify /opt/app/integration/import-notify.go)
+app_key=$({ printf '%s\n' "$WALLABAG_URL" "$WALLABAG_SHA256"; sha256sum integration/* patches/wallabag-*.patch .sandstorm/build.sh dist/wallabagger-sandstorm-*.zip; php -v; php -m; } | sha256sum | cut -d' ' -f1)
 if [[ ! -f build/app-version || "$(cat build/app-version)" != "$app_key" || ! -f build/library-seed.sqlite || ! -f build/wallabag-cache/prod/appAppKernelProdContainer.php ]]; then
     fetch "$WALLABAG_URL" "$WALLABAG_SHA256" ".sandstorm/caches/wallabag-$WALLABAG_VERSION.tar.gz"
     # These are exclusively generated outputs, never an upstream checkout.
@@ -34,24 +47,35 @@ if [[ ! -f build/app-version || "$(cat build/app-version)" != "$app_key" || ! -f
     rm -f build/library-seed.sqlite build/library-seed.sqlite-journal build/app-version
     mkdir -p build/wallabag
     tar -xzf ".sandstorm/caches/wallabag-$WALLABAG_VERSION.tar.gz" -C build/wallabag --strip-components=1
-    for patch in patches/wallabag-*.patch; do patch -d build/wallabag -p1 --fuzz=0 < "$patch"; done
+    for patch in patches/wallabag-*.patch; do
+        patch -d build/wallabag -p1 --batch --forward --fuzz=0 --no-backup-if-mismatch < "$patch"
+    done
     cp integration/security.yml build/wallabag/app/config/security.yml
     cp integration/SandstormAuthenticator.php build/wallabag/app/
-    cp integration/{sandstorm.js,sandstorm-feeds.js,powerbox-http-proxy.js} build/wallabag/web/
+    cp integration/{sandstorm.js,sandstorm-feeds.js,sandstorm-extensions.js,powerbox-http-proxy.js} build/wallabag/web/
+    mkdir -p build/wallabag/web/extensions
+    cp dist/wallabagger-sandstorm-{chrome,firefox}.zip build/wallabag/web/extensions/
     cp integration/warm.css build/wallabag/web/custom.css
     cp integration/warm.js build/wallabag/web/
     cp integration/SandstormFeedController.php build/wallabag/src/Wallabag/CoreBundle/Controller/
+    cp integration/SandstormExtensionController.php build/wallabag/src/Wallabag/CoreBundle/Controller/
     cp integration/SandstormThemeController.php build/wallabag/src/Wallabag/CoreBundle/Controller/
+    cp integration/SandstormImportController.php build/wallabag/src/Wallabag/CoreBundle/Controller/
     cp integration/SandstormTheme.php build/wallabag/src/Wallabag/CoreBundle/Helper/
     cp integration/SandstormThemeSubscriber.php build/wallabag/src/Wallabag/CoreBundle/Event/Subscriber/
+    cp integration/SandstormImportSubscriber.php build/wallabag/src/Wallabag/CoreBundle/Event/Subscriber/
     mkdir -p build/wallabag/src/Wallabag/CoreBundle/Resources/views/Sandstorm
     cp integration/feeds.html.twig build/wallabag/src/Wallabag/CoreBundle/Resources/views/Sandstorm/
+    cp integration/extensions.html.twig build/wallabag/src/Wallabag/CoreBundle/Resources/views/Sandstorm/
+    cp integration/imports.html.twig build/wallabag/src/Wallabag/CoreBundle/Resources/views/Sandstorm/
     rm -rf build/wallabag/var build/wallabag/data build/wallabag/web/assets/images
     rm -f build/wallabag/app/config/parameters.yml
     ln -s /var/lib/wallabag/runtime build/wallabag/var
     ln -s /var/lib/wallabag/data build/wallabag/data
     mkdir -p build/wallabag/web/assets
     ln -s /var/lib/wallabag/images build/wallabag/web/assets/images
+    rm -rf build/wallabag/web/uploads/import
+    mkdir -p build/wallabag/web/uploads
     # Static config with lazy env placeholders: no grain secrets in the package.
     php integration/parameters.php > build/wallabag/app/config/parameters.yml
     # VM-only scratch directories. These are not Sandstorm grain storage.
@@ -73,3 +97,4 @@ else
     echo 'wallabag unchanged; reusing application, database seed, and production cache.'
 fi
 { cat build/app-version build/proxy-version; sha256sum .sandstorm/launcher.sh; } | sha256sum | cut -d' ' -f1 > build/runtime-version
+python3 .sandstorm/collect-licenses.py

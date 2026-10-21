@@ -1,0 +1,196 @@
+# Target: wallabag 2.6.14
+# Purpose: Stage uploads privately with unique names and unconditional cleanup.
+--- a/src/Wallabag/ImportBundle/Controller/DeliciousController.php
++++ b/src/Wallabag/ImportBundle/Controller/DeliciousController.php
+@@ -42,9 +42,8 @@
+         if ($form->isSubmitted() && $form->isValid()) {
+             $file = $form->get('file')->getData();
+             $markAsRead = $form->get('mark_as_read')->getData();
+-            $name = 'delicious_' . $this->getUser()->getId() . '.json';
+ 
+-            if (null !== $file && \in_array($file->getClientMimeType(), $this->getParameter('wallabag_import.allow_mimetypes'), true) && $file->move($this->getParameter('wallabag_import.resource_dir'), $name)) {
++            if (null !== $file && \in_array($file->getClientMimeType(), $this->getParameter('wallabag_import.allow_mimetypes'), true)) {
+                 $res = $delicious
+                     ->setFilepath($this->getParameter('wallabag_import.resource_dir') . '/' . $name)
+                     ->setMarkAsRead($markAsRead)
+@@ -65,7 +64,6 @@
+                         ]);
+                     }
+ 
+-                    unlink($this->getParameter('wallabag_import.resource_dir') . '/' . $name);
+                 }
+ 
+                 $this->addFlash('notice', $message);
+--- a/src/Wallabag/ImportBundle/Controller/OmnivoreController.php
++++ b/src/Wallabag/ImportBundle/Controller/OmnivoreController.php
+@@ -42,9 +42,8 @@
+         if ($form->isSubmitted() && $form->isValid()) {
+             $file = $form->get('file')->getData();
+             $markAsRead = $form->get('mark_as_read')->getData();
+-            $name = 'omnivore_' . $this->getUser()->getId() . '.json';
+ 
+-            if (null !== $file && \in_array($file->getClientMimeType(), $this->getParameter('wallabag_import.allow_mimetypes'), true) && $file->move($this->getParameter('wallabag_import.resource_dir'), $name)) {
++            if (null !== $file && \in_array($file->getClientMimeType(), $this->getParameter('wallabag_import.allow_mimetypes'), true)) {
+                 $res = $omnivore
+                     ->setFilepath($this->getParameter('wallabag_import.resource_dir') . '/' . $name)
+                     ->setMarkAsRead($markAsRead)
+@@ -65,7 +64,6 @@
+                         ]);
+                     }
+ 
+-                    unlink($this->getParameter('wallabag_import.resource_dir') . '/' . $name);
+                 }
+ 
+                 $this->addFlash('notice', $message);
+--- a/src/Wallabag/ImportBundle/Controller/BrowserController.php
++++ b/src/Wallabag/ImportBundle/Controller/BrowserController.php
+@@ -28,13 +28,10 @@
+         if ($form->isSubmitted() && $form->isValid()) {
+             $file = $form->get('file')->getData();
+             $markAsRead = $form->get('mark_as_read')->getData();
+-            $name = $this->getUser()->getId() . '.json';
+ 
+-            if (null !== $file && \in_array($file->getClientMimeType(), $this->getParameter('wallabag_import.allow_mimetypes'), true) && $file->move($this->getParameter('wallabag_import.resource_dir'), $name)) {
+-                $res = $wallabag
+-                    ->setFilepath($this->getParameter('wallabag_import.resource_dir') . '/' . $name)
+-                    ->setMarkAsRead($markAsRead)
+-                    ->import();
++            if (null !== $file && \in_array($file->getClientMimeType(), $this->getParameter('wallabag_import.allow_mimetypes'), true)) {
++                require_once '/opt/app/integration/SandstormImportUpload.php';
++                $res = \SandstormImportUpload::run($file, $wallabag, $markAsRead, $this->getParameter('wallabag_import.resource_dir'));
+ 
+                 $message = 'flashes.import.notice.failed';
+ 
+@@ -51,7 +48,6 @@
+                         ]);
+                     }
+ 
+-                    unlink($this->getParameter('wallabag_import.resource_dir') . '/' . $name);
+                 }
+ 
+                 $this->addFlash('notice', $message);
+--- a/src/Wallabag/ImportBundle/Controller/PinboardController.php
++++ b/src/Wallabag/ImportBundle/Controller/PinboardController.php
+@@ -42,9 +42,8 @@
+         if ($form->isSubmitted() && $form->isValid()) {
+             $file = $form->get('file')->getData();
+             $markAsRead = $form->get('mark_as_read')->getData();
+-            $name = 'pinboard_' . $this->getUser()->getId() . '.json';
+ 
+-            if (null !== $file && \in_array($file->getClientMimeType(), $this->getParameter('wallabag_import.allow_mimetypes'), true) && $file->move($this->getParameter('wallabag_import.resource_dir'), $name)) {
++            if (null !== $file && \in_array($file->getClientMimeType(), $this->getParameter('wallabag_import.allow_mimetypes'), true)) {
+                 $res = $pinboard
+                     ->setFilepath($this->getParameter('wallabag_import.resource_dir') . '/' . $name)
+                     ->setMarkAsRead($markAsRead)
+@@ -65,7 +64,6 @@
+                         ]);
+                     }
+ 
+-                    unlink($this->getParameter('wallabag_import.resource_dir') . '/' . $name);
+                 }
+ 
+                 $this->addFlash('notice', $message);
+--- a/src/Wallabag/ImportBundle/Controller/ReadabilityController.php
++++ b/src/Wallabag/ImportBundle/Controller/ReadabilityController.php
+@@ -42,9 +42,8 @@
+         if ($form->isSubmitted() && $form->isValid()) {
+             $file = $form->get('file')->getData();
+             $markAsRead = $form->get('mark_as_read')->getData();
+-            $name = 'readability_' . $this->getUser()->getId() . '.json';
+ 
+-            if (null !== $file && \in_array($file->getClientMimeType(), $this->getParameter('wallabag_import.allow_mimetypes'), true) && $file->move($this->getParameter('wallabag_import.resource_dir'), $name)) {
++            if (null !== $file && \in_array($file->getClientMimeType(), $this->getParameter('wallabag_import.allow_mimetypes'), true)) {
+                 $res = $readability
+                     ->setFilepath($this->getParameter('wallabag_import.resource_dir') . '/' . $name)
+                     ->setMarkAsRead($markAsRead)
+@@ -65,7 +64,6 @@
+                         ]);
+                     }
+ 
+-                    unlink($this->getParameter('wallabag_import.resource_dir') . '/' . $name);
+                 }
+ 
+                 $this->addFlash('notice', $message);
+--- a/src/Wallabag/ImportBundle/Controller/HtmlController.php
++++ b/src/Wallabag/ImportBundle/Controller/HtmlController.php
+@@ -28,13 +28,10 @@
+         if ($form->isSubmitted() && $form->isValid()) {
+             $file = $form->get('file')->getData();
+             $markAsRead = $form->get('mark_as_read')->getData();
+-            $name = $this->getUser()->getId() . '.html';
+ 
+-            if (null !== $file && \in_array($file->getClientMimeType(), $this->getParameter('wallabag_import.allow_mimetypes'), true) && $file->move($this->getParameter('wallabag_import.resource_dir'), $name)) {
+-                $res = $wallabag
+-                    ->setFilepath($this->getParameter('wallabag_import.resource_dir') . '/' . $name)
+-                    ->setMarkAsRead($markAsRead)
+-                    ->import();
++            if (null !== $file && \in_array($file->getClientMimeType(), $this->getParameter('wallabag_import.allow_mimetypes'), true)) {
++                require_once '/opt/app/integration/SandstormImportUpload.php';
++                $res = \SandstormImportUpload::run($file, $wallabag, $markAsRead, $this->getParameter('wallabag_import.resource_dir'));
+ 
+                 $message = 'flashes.import.notice.failed';
+ 
+@@ -51,7 +48,6 @@
+                         ]);
+                     }
+ 
+-                    unlink($this->getParameter('wallabag_import.resource_dir') . '/' . $name);
+                 }
+ 
+                 $this->addFlash('notice', $message);
+--- a/src/Wallabag/ImportBundle/Controller/WallabagController.php
++++ b/src/Wallabag/ImportBundle/Controller/WallabagController.php
+@@ -31,13 +31,10 @@
+         if ($form->isSubmitted() && $form->isValid()) {
+             $file = $form->get('file')->getData();
+             $markAsRead = $form->get('mark_as_read')->getData();
+-            $name = $this->getUser()->getId() . '.json';
+ 
+-            if (null !== $file && \in_array($file->getClientMimeType(), $this->getParameter('wallabag_import.allow_mimetypes'), true) && $file->move($this->getParameter('wallabag_import.resource_dir'), $name)) {
+-                $res = $wallabag
+-                    ->setFilepath($this->getParameter('wallabag_import.resource_dir') . '/' . $name)
+-                    ->setMarkAsRead($markAsRead)
+-                    ->import();
++            if (null !== $file && \in_array($file->getClientMimeType(), $this->getParameter('wallabag_import.allow_mimetypes'), true)) {
++                require_once '/opt/app/integration/SandstormImportUpload.php';
++                $res = \SandstormImportUpload::run($file, $wallabag, $markAsRead, $this->getParameter('wallabag_import.resource_dir'));
+ 
+                 $message = 'flashes.import.notice.failed';
+ 
+@@ -54,7 +51,6 @@
+                         ]);
+                     }
+ 
+-                    unlink($this->getParameter('wallabag_import.resource_dir') . '/' . $name);
+                 }
+ 
+                 $this->addFlash('notice', $message);
+--- a/src/Wallabag/ImportBundle/Controller/InstapaperController.php
++++ b/src/Wallabag/ImportBundle/Controller/InstapaperController.php
+@@ -42,9 +42,8 @@
+         if ($form->isSubmitted() && $form->isValid()) {
+             $file = $form->get('file')->getData();
+             $markAsRead = $form->get('mark_as_read')->getData();
+-            $name = 'instapaper_' . $this->getUser()->getId() . '.csv';
+ 
+-            if (null !== $file && \in_array($file->getClientMimeType(), $this->getParameter('wallabag_import.allow_mimetypes'), true) && $file->move($this->getParameter('wallabag_import.resource_dir'), $name)) {
++            if (null !== $file && \in_array($file->getClientMimeType(), $this->getParameter('wallabag_import.allow_mimetypes'), true)) {
+                 $res = $instapaper
+                     ->setFilepath($this->getParameter('wallabag_import.resource_dir') . '/' . $name)
+                     ->setMarkAsRead($markAsRead)
+@@ -65,7 +64,6 @@
+                         ]);
+                     }
+ 
+-                    unlink($this->getParameter('wallabag_import.resource_dir') . '/' . $name);
+                 }
+ 
+                 $this->addFlash('notice', $message);
+--- a/app/config/wallabag.yml
++++ b/app/config/wallabag.yml
+@@ -174,4 +174,4 @@
+         - 'text/csv'
+         - 'text/html'
+         - 'application/vnd.ms-excel'
+-    resource_dir: "%kernel.project_dir%/web/uploads/import"
++    resource_dir: "/var/lib/wallabag/imports"

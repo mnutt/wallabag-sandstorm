@@ -62,6 +62,23 @@ document.addEventListener('submit', async (event) => {
     try {
         const response = await fetch(form.action, {method: 'POST', body: new FormData(form)});
         if (!response.ok) throw new Error(`Saving failed (${response.status}).`);
+        // Upstream renders form validation errors with HTTP 200. Navigating to
+        // that response URL would discard both the error and the entered URL.
+        if (!response.redirected) {
+            // Read only the form's error text; never insert response HTML into
+            // the live document. In particular, distinguish CSRF/session errors
+            // from invalid URLs rather than telling everyone to check the URL.
+            const result = new DOMParser().parseFromString(await response.text(), 'text/html');
+            const returnedForm = result.querySelector('form[name="entry"]');
+            const errors = returnedForm ? Array.from(returnedForm.querySelectorAll('.black-text li'),
+                error => error.textContent.trim()).filter(Boolean) : [];
+            // A rejected form can carry a fresh token after the session expires.
+            // Preserve the user's URL and allow an explicit retry with that token.
+            const token = form.querySelector('input[name="entry[_token]"]');
+            const freshToken = returnedForm?.querySelector('input[name="entry[_token]"]');
+            if (token && freshToken) token.value = freshToken.value;
+            throw new Error(errors.length ? errors.join(' ') : 'Article could not be saved. Reload the page and try again.');
+        }
         window.location.assign(response.url);
     } catch (error) {
         status.textContent = error.message + ' Please try again.';
@@ -73,14 +90,19 @@ document.addEventListener('submit', async (event) => {
 // External-reader setup is available to library collaborators.
 const accountMenu = document.querySelector('#dropdown-account');
 if (accountMenu) {
-    const item = document.createElement('li');
-    const link = document.createElement('a');
-    link.href = '/sandstorm/feeds';
-    const icon = document.createElement('i');
-    icon.className = 'material-icons';
-    icon.setAttribute('aria-hidden', 'true');
-    icon.textContent = 'rss_feed';
-    link.append(icon, document.createTextNode('RSS subscriptions'));
-    item.append(link);
-    accountMenu.prepend(item);
+    for (const [path, label, glyph] of [
+        ['/sandstorm/extensions', 'Browser extensions', 'extension'],
+        ['/sandstorm/feeds', 'RSS subscriptions', 'rss_feed'],
+    ]) {
+        const item = document.createElement('li');
+        const link = document.createElement('a');
+        link.href = path;
+        const icon = document.createElement('i');
+        icon.className = 'material-icons';
+        icon.setAttribute('aria-hidden', 'true');
+        icon.textContent = glyph;
+        link.append(icon, document.createTextNode(label));
+        item.append(link);
+        accountMenu.prepend(item);
+    }
 }

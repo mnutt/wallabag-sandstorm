@@ -1,3 +1,11 @@
+# Target: pinned source in upstream.lock.
+# Purpose: Load our DOM/icon enhancements and put Import beside Account in the toolbar.
+# The stylesheet uses upstream's existing custom.css hook and needs no template patch.
+# Order: Apply AFTER wallabag-sandstorm.patch, which inserts the neighboring script tags.
+# Keep this hook small; theme implementation belongs in integration/warm.js and warm.css.
+# Upgrade: Confirm base.html.twig still covers library and reader views and scripts run after DOM creation.
+# Validation: tests/theme.cjs exercises icons, controls, layouts and all color modes.
+
 --- a/src/Wallabag/CoreBundle/Resources/views/base.html.twig
 +++ b/src/Wallabag/CoreBundle/Resources/views/base.html.twig
 @@ -80,5 +80,6 @@
@@ -7,3 +15,24 @@
 +        <script src="{{ asset('warm.js') }}"></script>
      </body>
  </html>
+--- a/src/Wallabag/CoreBundle/Resources/views/layout.html.twig
++++ b/src/Wallabag/CoreBundle/Resources/views/layout.html.twig
+@@ -111,13 +111,17 @@
+                         </a>
+                     </li>
+                     <li class="bold">
++                        <a class="wave-effect tooltipped" data-position="bottom" data-delay="50" data-tooltip="{{ 'menu.left.import'|trans }}" aria-label="{{ 'menu.left.import'|trans }}" href="{{ path('import') }}">
++                            <i class="material-icons" aria-hidden="true">import_export</i>
++                        </a>
++                    </li>
++                    <li class="bold">
+                         <a class="wave-effect tooltipped dropdown-button" data-beloworigin="true" data-constrainwidth="false" data-activates="dropdown-account" data-position="bottom" data-delay="50" data-tooltip="{{ 'menu.top.account'|trans }}" href="#" id="news_menu">
+                             <i class="material-icons" id="news_link">account_circle</i>
+                         </a>
+                     </li>
+                 </ul>
+                 <ul id="dropdown-account" class="dropdown-content">
+-                    <li><a href="{{ path('import') }}"><i class="material-icons">import_export</i> {{ 'menu.left.import'|trans }}</a></li>
+                     {% if craue_setting('restricted_access') %}
+                         <li><a href="{{ path('site_credentials_index') }}"><i class="material-icons">vpn_key</i> {{ 'menu.left.site_credentials'|trans }}</a></li>
+                     {% endif %}

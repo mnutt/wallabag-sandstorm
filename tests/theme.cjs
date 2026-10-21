@@ -2,6 +2,9 @@
 const { chromium } = require('playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const compareStyles = process.env.THEME_BASELINE_CSS
+  ? require('./theme-style-comparison.cjs')
+  : async () => {};
 
 (async () => {
   assert.ok(process.env.GRAIN_URL && process.env.SANDSTORM_STORAGE_STATE,
@@ -19,12 +22,33 @@ const fs = require('node:fs');
   page.on('pageerror', error => errors.push(error.message));
   let frame, originalListMode, switched = false;
   const screenshot = async name => {
+    await compareStyles(frame, name);
     if (!process.env.SCREENSHOT_DIR) return;
     fs.mkdirSync(process.env.SCREENSHOT_DIR, { recursive: true });
     await frame.locator('body').screenshot({ path: `${process.env.SCREENSHOT_DIR}/${name}.png` });
   };
+  const compareBreakpoints = async name => {
+    if (!process.env.THEME_BASELINE_CSS) return;
+    const viewport = page.viewportSize();
+    for (const width of [600, 601, 992, 993]) {
+      await page.setViewportSize({ width, height: 1000 });
+      // Sandstorm's own sidebar can consume viewport width outside the app frame.
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const delta = width - await frame.evaluate(() => innerWidth);
+        if (!delta) break;
+        await page.setViewportSize({ width: page.viewportSize().width + delta, height: 1000 });
+      }
+      assert.equal(await frame.evaluate(() => innerWidth), width);
+      // Let the responsive footer observer and existing menu transitions settle.
+      await page.waitForTimeout(250);
+      await compareStyles(frame, `${name}-${width}px`);
+    }
+    await page.setViewportSize(viewport);
+  };
   const toggleTheme = async theme => {
     await frame.locator('#news_menu').click();
+    if (process.env.THEME_BASELINE_CSS) await page.waitForTimeout(400);
+    await compareStyles(frame, `account-menu-before-${theme}`);
     await frame.locator(`.js-theme-toggle[data-theme="${theme}"]`).click();
     // Allow upstream menu/color transitions to finish before screenshots.
     await page.waitForTimeout(400);
@@ -42,6 +66,7 @@ const fs = require('node:fs');
       await input.focus();
       for (const focused of [true, false]) {
         if (!focused) await input.blur();
+        await compareStyles(frame, `${action}-input-${focused ? 'focused' : 'blurred'}`);
         assert.deepEqual(await input.evaluate(el => {
           const style = getComputedStyle(el);
           return {
@@ -105,6 +130,7 @@ const fs = require('node:fs');
     const tooltipId = await frame.locator('#nav-btn-add').getAttribute('data-tooltip-id');
     const tooltip = frame.locator(`[id="${tooltipId}"]`);
     await tooltip.waitFor({ state: 'visible' });
+    await compareStyles(frame, 'add-tooltip');
     for (const delay of [0, 80, 160]) {
       if (delay) await page.waitForTimeout(delay);
       assert.deepEqual(await tooltip.evaluate(el => ({
@@ -134,6 +160,7 @@ const fs = require('node:fs');
     await checkPaper('rgb(250, 248, 244)');
     await checkHeaderFields();
     await screenshot('library-light');
+    await compareBreakpoints('library-light');
     await toggleTheme('dark');
     await checkPaper('rgb(36, 36, 31)');
     await checkHeaderFields();
@@ -157,6 +184,7 @@ const fs = require('node:fs');
     await page.emulateMedia({ colorScheme: 'dark' });
     await checkPaper('rgb(36, 36, 31)');
     await screenshot('alternate-view');
+    await compareBreakpoints('alternate-view-dark');
     assert.ok(await frame.locator('.card-entry-labels li').evaluateAll(tags => tags.every(tag =>
       getComputedStyle(tag).borderTopLeftRadius === '0px' && getComputedStyle(tag).borderBottomLeftRadius === '0px')));
     await switchView();
@@ -223,6 +251,7 @@ const fs = require('node:fs');
     const expandedIconPositions = await rail.locator('.collapsible-header > .material-icons')
       .evaluateAll(icons => icons.map(icon => icon.getBoundingClientRect().x));
     assert.deepEqual(expandedIconPositions, collapsedIconPositions, 'Icons must stay in place as the sidebar expands.');
+    await compareStyles(frame, 'reader-sidebar-expanded');
     assert.ok(await rail.locator('.collapsible-header > span').evaluateAll(labels =>
       labels.every(label => label.scrollWidth <= label.clientWidth && label.getClientRects().length === 1)),
     'Expanded sidebar labels should fit on one line without clipping.');
@@ -230,12 +259,22 @@ const fs = require('node:fs');
     await exportHeader.click();
     const exportOptions = exportHeader.locator('..').locator('.collapsible-body');
     await exportOptions.waitFor({ state: 'visible' });
+    if (process.env.THEME_BASELINE_CSS) await page.waitForTimeout(400);
+    await compareStyles(frame, 'reader-export-expanded');
     await frame.locator('#article > header').hover();
     await exportOptions.waitFor({ state: 'hidden' });
     await rail.hover();
     await exportOptions.waitFor({ state: 'visible' });
     await frame.locator('#article > header').hover();
     await screenshot('reader-dark');
+    await compareBreakpoints('reader-dark');
+    if (process.env.THEME_BASELINE_CSS) {
+      await page.emulateMedia({ media: 'print' });
+      await compareStyles(frame, 'reader-print');
+      await page.emulateMedia({ media: 'screen', reducedMotion: 'reduce' });
+      await compareStyles(frame, 'reader-reduced-motion');
+      await page.emulateMedia({ reducedMotion: 'no-preference' });
+    }
     assert.deepEqual(errors, []);
     console.log('PASS: packaged assets, light/dark/automatic themes, persistence, grid/list, mobile search/filters, reader, and no JS errors.');
   } finally {

@@ -62,8 +62,10 @@ const assert = require('node:assert/strict');
         (await fetch('/sandstorm/theme')).status,
         (await fetch('/sandstorm/theme', {method:'POST', body:new URLSearchParams({theme:'light'})})).status,
         (await fetch('/sandstorm/theme', {method:'POST', body:new URLSearchParams({theme:'invalid', _token:token})})).status,
+        (await fetch('/sandstorm/theme', {method:'POST', body:new URLSearchParams({theme:'light', '_token[]':'invalid'})})).status,
+        (await fetch('/sandstorm/theme', {method:'POST', body:new URLSearchParams({'theme[]':'dark', _token:token})})).status,
       ];
-    }), [405, 403, 400]);
+    }), [405, 403, 400, 403, 400]);
     await choose('light');
     await context.close();
     await open(deepLink);

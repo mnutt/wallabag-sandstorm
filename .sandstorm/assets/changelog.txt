@@ -1,0 +1,23 @@
+# 2.6.14-sandstorm.4
+
+- Add persistent Redis-backed imports with Sandstorm wake locks, completion activity, and pause/retry controls.
+- Show specific save-form errors and refresh rejected form tokens for retry.
+- Complete package metadata, icons, screenshots, and license attribution.
+- Persist navigation and personal light/dark/automatic theme choices.
+- Add the local Warm appearance for library and reader views.
+- Prepare the database and shared production cache at build time for smaller, faster grains.
+- Validate RSS and theme inputs, keep arbitrary parameters out of feed links, and improve save errors.
+- Accept article URLs in extension setup and serialize connection attempts.
+- Document and validate the patch set; make incremental builds reliable.
+
+# 2.6.14-sandstorm.2
+
+- Add full-text RSS feeds with revocable feed-only credentials.
+
+# 2.6.14-sandstorm.1
+
+- Add Sandstorm browser capture through the adapted Wallabagger extension.
+
+# Initial package
+
+- Integrate Sandstorm authentication, shared libraries, and capability-based website access.

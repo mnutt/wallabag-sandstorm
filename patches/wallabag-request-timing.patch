@@ -1,0 +1,30 @@
+# Target: pinned source in upstream.lock, web/app.php.
+# Purpose: Expose monotonic bootstrap and kernel timings for production diagnosis.
+# Sandstorm forwards X-Sandstorm-App-* headers but not standard Server-Timing.
+# Values contain durations only, never URLs, identities, queries or credentials.
+# Scope: Excludes FPM queueing, response transfer and kernel termination. Compare
+# their sum with nginx's upstream-header time to identify time outside PHP code.
+# Upgrade: Keep timers around autoload/kernel creation and kernel handle, and set
+# headers before send(). Validation: tests/patches.py and tests/assets.cjs.
+--- a/web/app.php
++++ b/web/app.php
+@@ -2,6 +2,7 @@
+ 
+ use Symfony\Component\HttpFoundation\Request;
+ 
++$sandstormStarted = hrtime(true);
+ require __DIR__.'/../vendor/autoload.php';
+ 
+ $kernel = new AppKernel('prod', false);
+@@ -10,6 +11,11 @@
+ // When using the HttpCache, you need to call the method in your front controller instead of relying on the configuration parameter
+ //Request::enableHttpMethodParameterOverride();
+ $request = Request::createFromGlobals();
++$sandstormBootstrapped = hrtime(true);
+ $response = $kernel->handle($request);
++$sandstormHandled = hrtime(true);
++$response->headers->set('X-Sandstorm-App-Bootstrap-Ms', sprintf('%.2f', ($sandstormBootstrapped - $sandstormStarted) / 1000000));
++$response->headers->set('X-Sandstorm-App-Kernel-Ms', sprintf('%.2f', ($sandstormHandled - $sandstormBootstrapped) / 1000000));
++// Header durations exclude send()/terminate() and any wait for an FPM worker.
+ $response->send();
+ $kernel->terminate($request, $response);

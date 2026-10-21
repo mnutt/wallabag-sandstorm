@@ -1,3 +1,10 @@
+# Target: pinned source in upstream.lock.
+# Purpose: Keep asset URLs on the current Sandstorm session origin instead of domain_name.
+# The iframe origin changes between sessions; never bake a UI hostname into the shared cache.
+# This changes only production assets and preserves upstream's webpack development branch.
+# Upgrade: Check Symfony asset configuration and any new absolute-URL generation paths.
+# Validation: Open a grain in fresh browser contexts; CSS, JS and local images must load.
+
 --- a/app/AppKernel.php
 +++ b/app/AppKernel.php
 @@ -86,7 +86,7 @@
