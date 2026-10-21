@@ -8,6 +8,8 @@ Each Sandstorm grain is one reading library. Collaborators share full access,
 including deletion and export. The package includes background imports, a browser
 extension, private RSS feeds, and light, dark, and automatic themes.
 
+![A wallabag reading library in icon view, showing six saved articles with image previews.](docs/images/library.png)
+
 ## Getting started
 
 Open the wallabag app in Sandstorm and create a reading library. Save a URL and
