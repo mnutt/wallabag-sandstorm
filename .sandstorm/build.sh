@@ -51,6 +51,7 @@ if [[ ! -f build/app-version || "$(cat build/app-version)" != "$app_key" || ! -f
     for patch in patches/wallabag-*.patch; do
         patch -d build/wallabag -p1 --batch --forward --fuzz=0 --no-backup-if-mismatch < "$patch"
     done
+    cp integration/agrat.gitbook.io.txt build/wallabag/vendor/j0k3r/graby-site-config/
     cp integration/security.yml build/wallabag/app/config/security.yml
     cp integration/SandstormAuthenticator.php build/wallabag/app/
     cp integration/{sandstorm.js,sandstorm-feeds.js,sandstorm-extensions.js,sandstorm-network.js,powerbox-http-proxy.js} build/wallabag/web/

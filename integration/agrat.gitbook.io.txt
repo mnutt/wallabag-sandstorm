@@ -1,0 +1,4 @@
+# Modern GitBook renders the article inside main; generic scoring drops it.
+body: //main
+title: //main//h1
+strip: //main//nav

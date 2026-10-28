@@ -48,3 +48,29 @@ function importDisconnectNetwork(): bool
     curl_close($curl);
     return $result !== false && $status === 204;
 }
+
+// Explicit non-web schemes are bookmarklets/local resources, not retryable fetches.
+function importUnsupportedScheme(string $url): ?string
+{
+    if (!preg_match('/^([a-z][a-z0-9+.-]*):/i', trim($url), $match)) return null;
+    $scheme = strtolower($match[1]);
+    return in_array($scheme, ['http', 'https'], true) ? null : $scheme;
+}
+
+function importDiagnosticHandler(string $label, $stream = 'php://stderr'): \Monolog\Handler\StreamHandler
+{
+    $handler = new \Monolog\Handler\StreamHandler($stream, \Monolog\Logger::WARNING);
+    $handler->setFormatter(new \Monolog\Formatter\LineFormatter(
+        "[import] %datetime% %extra.import_entry% %channel%.%level_name%: %message%\n",
+        'Y-m-d\TH:i:sP', false, true
+    ));
+    $handler->pushProcessor(new \Monolog\Processor\PsrLogMessageProcessor());
+    $handler->pushProcessor(static function (array $record) use ($label): array {
+        $record['extra']['import_entry'] = $label;
+        if (isset($record['context']['exception']) && $record['context']['exception'] instanceof \Throwable) {
+            $record['message'] .= ' ' . $record['context']['exception']->getMessage();
+        }
+        return $record;
+    });
+    return $handler;
+}

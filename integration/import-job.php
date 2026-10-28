@@ -25,24 +25,17 @@ $log = static function (string $message) use ($label, $started): void {
     fwrite(STDERR, '[import] ' . gmdate('Y-m-d\TH:i:s\Z') . ' ' . $label . ' elapsed=' .
         number_format(microtime(true) - $started, 2, '.', '') . 's ' . $message . "\n");
 };
+if (($unsupportedScheme = importUnsupportedScheme($url)) !== null) {
+    $log('Skipped: unsupported URL scheme ' . $unsupportedScheme . '; not a web article');
+    exit(0);
+}
 $log('Processing entry');
 try {
     $kernel = new AppKernel('prod', false);
     $kernel->boot();
     // Forward diagnostics for this entry, including errors Graby catches before
     // returning its generic extraction-failure page. Do not dump article bodies.
-    $handler = new \Monolog\Handler\StreamHandler('php://stderr', \Monolog\Logger::WARNING);
-    $handler->setFormatter(new \Monolog\Formatter\LineFormatter(
-        "[import] %datetime% %extra.import_entry% %channel%.%level_name%: %message%\n",
-        'Y-m-d\TH:i:sP', false, true
-    ));
-    $handler->pushProcessor(static function (array $record) use ($label): array {
-        $record['extra']['import_entry'] = $label;
-        if (isset($record['context']['exception']) && $record['context']['exception'] instanceof \Throwable) {
-            $record['message'] .= ' ' . $record['context']['exception']->getMessage();
-        }
-        return $record;
-    });
+    $handler = importDiagnosticHandler($label);
     $logger = new \Monolog\Logger('fetch', [$handler]);
     // Graby propagates this logger to its extractor and HTTP fetcher.
     $kernel->getContainer()->get(\Graby\Graby::class)->setLogger($logger);
