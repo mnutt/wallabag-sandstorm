@@ -1,0 +1,56 @@
+# Target: pinned Graby in upstream.lock.
+# Purpose: Preserve Prism React code whitespace and remove line-number gutters before extraction.
+# Validation: tests/code-blocks.php.
+--- a/vendor/j0k3r/graby/src/Extractor/ContentExtractor.php
++++ b/vendor/j0k3r/graby/src/Extractor/ContentExtractor.php
+@@ -168,6 +168,8 @@
+      */
+     public function process($html, $url, ?SiteConfig $siteConfig = null, $smartTidy = true)
+     {
++        require_once '/opt/app/integration/SandstormCodeBlocks.php';
++        $html = \SandstormCodeBlocks::normalize($html);
+         $this->reset();
+ 
+         $this->siteConfig = $siteConfig;
+--- a/vendor/j0k3r/graby/src/Graby.php
++++ b/vendor/j0k3r/graby/src/Graby.php
+@@ -316,15 +316,17 @@
+         }
+ 
+         $html = $this->convert2Utf8($response['body'], $response['headers']);
++        require_once '/opt/app/integration/SandstormCodeBlocks.php';
++        $html = \SandstormCodeBlocks::normalize($html);
+ 
+         $this->logger->debug('Fetched HTML', ['html' => $html]);
+ 
+         // Remove empty lines to avoid runaway evaluation of following regex on badly coded websites
+-        $re = '/^[ \t]*[\r\n]+/m';
++        $re = '/<pre\b[^>]*>[\s\S]*?<\/pre>(*SKIP)(*F)|^[ \t]*[\r\n]+/mi';
+         $htmlCleaned = preg_replace($re, '', $html);
+ 
+         // Remove empty nodes (except iframe)
+-        $re = '/<(?!iframe)([^>\s]+)[^>]*>(?:<br \/>|&nbsp;|&thinsp;|&ensp;|&emsp;|&#8201;|&#8194;|&#8195;|\s)*<\/\1>/m';
++        $re = '/<pre\b[^>]*>[\s\S]*?<\/pre>(*SKIP)(*F)|<(?!iframe)([^>\s]+)[^>]*>(?:<br \/>|&nbsp;|&thinsp;|&ensp;|&emsp;|&#8201;|&#8194;|&#8195;|\s)*<\/\1>/m';
+         $html = preg_replace($re, '', (string) $htmlCleaned);
+ 
+         // in case html string is too long, keep the html uncleaned to avoid empty html
+--- a/vendor/j0k3r/php-readability/src/Readability.php
++++ b/vendor/j0k3r/php-readability/src/Readability.php
+@@ -157,7 +157,7 @@
+         // remove all attributes on text tags
+         // '!<(\s*/?\s*(?:blockquote|br|hr|code|div|article|span|footer|aside|p|pre|dl|li|ul|ol)) [^>]+>!is' => "<\\1>",
+         // single newlines cleanup
+-        "/\n+/" => "\n",
++        '/<pre\b[^>]*>[\s\S]*?<\/pre>(*SKIP)(*F)|\n+/i' => "\n",
+         // modern web...
+         '!<pre[^>]*>\s*<code!is' => '<pre',
+         '!</code>\s*</pre>!is' => '</pre>',
+@@ -1427,7 +1427,7 @@
+             if (false !== $tidy && $this->html !== $tidy) {
+                 $this->tidied = true;
+                 $this->html = $tidy;
+-                $this->html = preg_replace('/[\r\n]+/is', "\n", $this->html);
++                $this->html = preg_replace('/<pre\b[^>]*>.*?<\/pre>(*SKIP)(*F)|[\r\n]+/is', "\n", $this->html);
+             }
+             unset($tidy);
+         }

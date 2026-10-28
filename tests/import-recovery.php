@@ -1,6 +1,7 @@
 <?php
 require '/opt/app/build/wallabag/vendor/autoload.php';
 require '/opt/app/integration/SandstormImportState.php';
+if (getenv('DIAGNOSTIC_CONSUMER_FILE')) require getenv('DIAGNOSTIC_CONSUMER_FILE');
 use Wallabag\CoreBundle\Entity\Entry;
 use Wallabag\UserBundle\Entity\User;
 use Wallabag\ImportBundle\Consumer\RedisEntryConsumer;
@@ -43,7 +44,14 @@ $consumer = (new ReflectionClass(RedisEntryConsumer::class))->newInstanceWithout
 foreach (['em' => $em, 'import' => $import, 'eventDispatcher' => $dispatcher, 'userRepository' => $repository, 'logger' => new Psr\Log\NullLogger()] as $key => $value) property($consumer, $key, $value);
 putenv('SANDSTORM_IMPORT_JOB_KEY=test-job');
 $job = json_encode(['userId' => 42]);
-check(!$consumer->manage($job), 'Interrupted import acknowledged');
+putenv('SANDSTORM_IMPORT_WORKER=1');
+try {
+    $consumer->manage($job);
+    throw new LogicException('Expected original save-event exception');
+} catch (RuntimeException $error) {
+    check($error->getMessage() === 'Simulated interruption during image download', 'Save failure lost its original cause');
+}
+putenv('SANDSTORM_IMPORT_WORKER');
 check((int) $db->fetchOne('SELECT COUNT(*) FROM sandstorm_import_pending') === 1, 'Saved entry has no durable checkpoint');
 check($consumer->manage($job), 'Retry failed');
 check($import->calls === 1 && $dispatcher->calls === 2, 'Retry skipped unfinished images or parsed entry again');

@@ -36,3 +36,41 @@ function importActivity(string $session): void
         [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']], $pipes);
     if (!is_resource($process) || proc_close($process) !== 0) error_log('Could not post import-start activity.');
 }
+
+// This loopback endpoint is deliberately not exposed through nginx.
+function importDisconnectNetwork(): bool
+{
+    $curl = curl_init('http://127.0.0.1:3001/_sandstorm/network/import-complete');
+    curl_setopt_array($curl, [CURLOPT_POST => true, CURLOPT_PROXY => '',
+        CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 2, CURLOPT_TIMEOUT => 12]);
+    $result = curl_exec($curl);
+    $status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    curl_close($curl);
+    return $result !== false && $status === 204;
+}
+
+// Explicit non-web schemes are bookmarklets/local resources, not retryable fetches.
+function importUnsupportedScheme(string $url): ?string
+{
+    if (!preg_match('/^([a-z][a-z0-9+.-]*):/i', trim($url), $match)) return null;
+    $scheme = strtolower($match[1]);
+    return in_array($scheme, ['http', 'https'], true) ? null : $scheme;
+}
+
+function importDiagnosticHandler(string $label, $stream = 'php://stderr'): \Monolog\Handler\StreamHandler
+{
+    $handler = new \Monolog\Handler\StreamHandler($stream, \Monolog\Logger::WARNING);
+    $handler->setFormatter(new \Monolog\Formatter\LineFormatter(
+        "[import] %datetime% %extra.import_entry% %channel%.%level_name%: %message%\n",
+        'Y-m-d\TH:i:sP', false, true
+    ));
+    $handler->pushProcessor(new \Monolog\Processor\PsrLogMessageProcessor());
+    $handler->pushProcessor(static function (array $record) use ($label): array {
+        $record['extra']['import_entry'] = $label;
+        if (isset($record['context']['exception']) && $record['context']['exception'] instanceof \Throwable) {
+            $record['message'] .= ' ' . $record['context']['exception']->getMessage();
+        }
+        return $record;
+    });
+    return $handler;
+}

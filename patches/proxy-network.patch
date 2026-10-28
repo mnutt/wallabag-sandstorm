@@ -1,0 +1,53 @@
+# Target: pinned source in upstream.lock.
+# Purpose: Add an optional IpNetwork transport and configuration endpoint.
+# Coupling: .sandstorm/build.sh copies integration/proxy-network.go into the proxy.
+# Validation: tests/proxy-startup.sh covers networking, revocation, and permissions.
+--- a/server.go
++++ b/server.go
+@@ -16,6 +16,7 @@
+ 	"github.com/gorilla/websocket"
+ 
+ 	capnp "capnproto.org/go/capnp/v3"
++	"capnproto.org/go/capnp/v3/rpc"
+ 
+ 	"sandstorm.org/go/tempest/capnp/api-session"
+ 	"sandstorm.org/go/tempest/capnp/powerbox"
+@@ -24,6 +25,7 @@
+ func NewServer(storage Storage, spoofer *CertSpoofer) Server {
+ 	return Server{
+ 		storage:   storage,
++		network: &networkAccess{active: make(map[*rpc.Conn]context.CancelFunc)},
+ 		spoofer:   spoofer,
+ 		pr:        NewPowerboxRequester(),
+ 		tokenLock: &sync.Mutex{},
+@@ -31,6 +33,7 @@
+ }
+ 
+ type Server struct {
++	network *networkAccess
+ 	storage Storage
+ 	spoofer *CertSpoofer
+ 	pr      *PowerboxRequester
+@@ -139,6 +142,7 @@
+ }
+ 
+ func (s Server) proxyRequest(req *http.Request) (*http.Response, error) {
++	if resp, err, configured := s.networkRequest(req); configured { return resp, err }
+ 	url := *req.URL
+ 	url.Path = ""
+ 	url.RawPath = ""
+--- a/main.go
++++ b/main.go
+@@ -57,7 +57,11 @@
+ 	srv := NewServer(storage, caspoof)
+ 
+ 	go func() {
+-		panic(http.ListenAndServe(webSocketListenAddr, srv.WebSocketHandler()))
++		mux := http.NewServeMux()
++		mux.Handle("/_sandstorm/websocket", srv.WebSocketHandler())
++		mux.Handle("/_sandstorm/network", srv.NetworkHandler())
++		mux.Handle("/_sandstorm/network/import-complete", srv.ImportCompleteHandler())
++		panic(http.ListenAndServe(webSocketListenAddr, mux))
+ 	}()
+ 	panic(http.ListenAndServe(proxyListenAddr, srv.ProxyHandler()))
+ }

@@ -57,3 +57,17 @@ downgrade is not supported.
 
 Original integration code is [MIT licensed](LICENSE). Bundled projects retain
 their own licenses.
+
+## Optional network access
+
+On the **Import** page, below import status, click **Connect IpNetwork** to give the
+grain unrestricted internet access without approving every website. Sandstorm
+normally requires a server administrator to grant this capability.
+
+Select **Disconnect when import finishes** to automatically drop the grant after
+the current or next import batch finishes, even with the page closed. Pausing an
+import keeps the connection; completion disconnects even if some entries failed.
+You can change the checkbox while connected or click **Disconnect IpNetwork** at
+any time. Disconnecting stops active network downloads. Existing per-site grants
+remain available; new websites again require approval. Retry interrupted entries
+from the Import page.

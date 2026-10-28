@@ -24,7 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 
-wallabag 2.6.14 and its logo
+wallabag 2.6.15 and its logo
 https://github.com/wallabag/wallabag
 
 Copyright (c) 2013-current Nicolas Lœuillet

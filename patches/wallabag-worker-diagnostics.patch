@@ -1,0 +1,50 @@
+# Target: pinned wallabag in upstream.lock.
+# Purpose: Skip malformed optional images and expose extraction status and worker save errors.
+# Validation: tests/import-diagnostics.php and tests/import-recovery.php.
+--- a/src/Wallabag/CoreBundle/Helper/DownloadImages.php
++++ b/src/Wallabag/CoreBundle/Helper/DownloadImages.php
+@@ -143,7 +143,12 @@
+ 
+ 
+         // build image path
+-        $absolutePath = $this->getAbsoluteLink($url, $imagePath);
++        try {
++            $absolutePath = $this->getAbsoluteLink($url, $imagePath);
++        } catch (\InvalidArgumentException $e) {
++            $this->logger->warning('DownloadImages: Invalid image URL, skipping.', ['exception' => $e]);
++            return false;
++        }
+         if (false === $absolutePath) {
+             $this->logger->error('DownloadImages: Can not determine the absolute path for that image, skipping.');
+ 
+@@ -161,6 +166,9 @@
+                 }
+             }
+         }
++        if (getenv('SANDSTORM_IMPORT_WORKER') === '1') {
++            fwrite(STDERR, '[import] Fetching image url=' . json_encode($absolutePath, JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE) . "\n");
++        }
+         try {
+             $res = $this->client->get($absolutePath);
+             $bytes = SandstormImageProcessor::readResponse($res);
+--- a/src/Wallabag/ImportBundle/Consumer/AbstractConsumer.php
++++ b/src/Wallabag/ImportBundle/Consumer/AbstractConsumer.php
+@@ -93,6 +93,7 @@
+             $this->em->clear(Entry::class);
+             $this->em->clear(Tag::class);
+         } catch (\Exception $e) {
++            if (getenv('SANDSTORM_IMPORT_WORKER') === '1') throw $e;
+             $this->logger->warning('Unable to save entry', ['entry' => $storedEntry, 'exception' => $e]);
+ 
+             return false;
+--- a/src/Wallabag/CoreBundle/Helper/ContentProxy.php
++++ b/src/Wallabag/CoreBundle/Helper/ContentProxy.php
+@@ -67,7 +67,7 @@
+             }, \ARRAY_FILTER_USE_BOTH);
+             if (getenv('SANDSTORM_IMPORT_WORKER') === '1' && $fetchedContent['html'] === $this->fetchingErrorMessage) {
+                 // Preserve the queued entry for retry after a missing grant or fetch error.
+-                throw new \RuntimeException('Imported article could not be fetched.');
++                throw new \RuntimeException('Article extraction failed (HTTP ' . ($fetchedContent['status'] ?? 'unknown') . ').');
+             }
+ 
+             $title = $content['title'] ?? $fetchedContent['title'] ?? null;

@@ -23,7 +23,7 @@ fetch() {
     fi
     echo "$checksum  $target" | sha256sum --check --status
 }
-proxy_key=$({ printf '%s\n' "$PROXY_URL" "$PROXY_SHA256"; sha256sum patches/proxy-*.patch .sandstorm/build.sh; go version; } | sha256sum | cut -d' ' -f1)
+proxy_key=$({ printf '%s\n' "$PROXY_URL" "$PROXY_SHA256"; sha256sum patches/proxy-*.patch integration/proxy-network.go .sandstorm/build.sh; go version; } | sha256sum | cut -d' ' -f1)
 if [[ ! -x build/powerbox-http-proxy || ! -f build/proxy-version || "$(cat build/proxy-version)" != "$proxy_key" ]]; then
     fetch "$PROXY_URL" "$PROXY_SHA256" .sandstorm/caches/powerbox-http-proxy.tar.gz
     rm -rf build/proxy-source
@@ -32,6 +32,7 @@ if [[ ! -x build/powerbox-http-proxy || ! -f build/proxy-version || "$(cat build
     for patch in patches/proxy-*.patch; do
         patch -d build/proxy-source -p1 --batch --forward --fuzz=0 --no-backup-if-mismatch < "$patch"
     done
+    cp integration/proxy-network.go build/proxy-source/
     (cd build/proxy-source && go build -trimpath -o ../powerbox-http-proxy .)
     printf '%s\n' "$proxy_key" > build/proxy-version
 else
@@ -50,9 +51,10 @@ if [[ ! -f build/app-version || "$(cat build/app-version)" != "$app_key" || ! -f
     for patch in patches/wallabag-*.patch; do
         patch -d build/wallabag -p1 --batch --forward --fuzz=0 --no-backup-if-mismatch < "$patch"
     done
+    cp integration/agrat.gitbook.io.txt build/wallabag/vendor/j0k3r/graby-site-config/
     cp integration/security.yml build/wallabag/app/config/security.yml
     cp integration/SandstormAuthenticator.php build/wallabag/app/
-    cp integration/{sandstorm.js,sandstorm-feeds.js,sandstorm-extensions.js,powerbox-http-proxy.js} build/wallabag/web/
+    cp integration/{sandstorm.js,sandstorm-feeds.js,sandstorm-extensions.js,sandstorm-network.js,powerbox-http-proxy.js} build/wallabag/web/
     mkdir -p build/wallabag/web/extensions
     cp dist/wallabagger-sandstorm-{chrome,firefox}.zip build/wallabag/web/extensions/
     cp integration/warm.css build/wallabag/web/custom.css
@@ -67,7 +69,7 @@ if [[ ! -f build/app-version || "$(cat build/app-version)" != "$app_key" || ! -f
     mkdir -p build/wallabag/src/Wallabag/CoreBundle/Resources/views/Sandstorm
     cp integration/feeds.html.twig build/wallabag/src/Wallabag/CoreBundle/Resources/views/Sandstorm/
     cp integration/extensions.html.twig build/wallabag/src/Wallabag/CoreBundle/Resources/views/Sandstorm/
-    cp integration/imports.html.twig build/wallabag/src/Wallabag/CoreBundle/Resources/views/Sandstorm/
+    cp integration/{imports,import-network}.html.twig build/wallabag/src/Wallabag/CoreBundle/Resources/views/Sandstorm/
     rm -rf build/wallabag/var build/wallabag/data build/wallabag/web/assets/images
     rm -f build/wallabag/app/config/parameters.yml
     ln -s /var/lib/wallabag/runtime build/wallabag/var
