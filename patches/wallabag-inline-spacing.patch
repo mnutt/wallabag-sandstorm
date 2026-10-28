@@ -1,0 +1,16 @@
+# Target: pinned PHP Readability in upstream.lock.
+# Purpose: Preserve text-node whitespace around inline elements during scoring.
+# Validation: tests/inline-spacing.php.
+--- a/vendor/j0k3r/php-readability/src/Readability.php
++++ b/vendor/j0k3r/php-readability/src/Readability.php
+@@ -1039,7 +1039,9 @@
+ 
+                         if (\XML_TEXT_NODE === $childNode->nodeType) {
+                             $p = $this->dom->createElement('p');
+-                            $p->setInnerHtml($childNode->nodeValue);
++                            // Keep boundary spaces and literal text when temporarily wrapping
++                            // a text node. setInnerHtml() trims and reparses it as markup.
++                            $p->appendChild($childNode->cloneNode(true));
+                             $p->setAttribute('data-readability-styled', 'true');
+                             $childNode->parentNode->replaceChild($p, $childNode);
+                         }

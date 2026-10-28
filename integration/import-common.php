@@ -36,3 +36,15 @@ function importActivity(string $session): void
         [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']], $pipes);
     if (!is_resource($process) || proc_close($process) !== 0) error_log('Could not post import-start activity.');
 }
+
+// This loopback endpoint is deliberately not exposed through nginx.
+function importDisconnectNetwork(): bool
+{
+    $curl = curl_init('http://127.0.0.1:3001/_sandstorm/network/import-complete');
+    curl_setopt_array($curl, [CURLOPT_POST => true, CURLOPT_PROXY => '',
+        CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 2, CURLOPT_TIMEOUT => 12]);
+    $result = curl_exec($curl);
+    $status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    curl_close($curl);
+    return $result !== false && $status === 204;
+}

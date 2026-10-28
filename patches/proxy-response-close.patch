@@ -1,0 +1,25 @@
+# Target: pinned proxy source in upstream.lock.
+# Purpose: Finish EOF-delimited CONNECT responses instead of waiting for client timeout.
+# Validation: tests/proxy-response_test.go exercises the real TLS tunnel.
+--- a/server.go
++++ b/server.go
+@@ -135,8 +135,17 @@
+ 				}
+ 			}
+ 			defer resp.Body.Close()
+-			resp.Write(tlsConn)
+-			shouldClose = shouldClose || resp.Header.Get("Connection") == "close"
++			// Response.Write uses EOF framing when neither a length nor chunked
++			// encoding is available (including automatically decoded responses).
++			if resp.ContentLength < 0 && len(resp.TransferEncoding) == 0 {
++				resp.Close = true
++			}
++			if err := resp.Write(tlsConn); err != nil {
++				log.Printf("Failed to write proxied response: %v", err)
++				shouldClose = true
++			}
++			// Go consumes Connection: close into Response.Close, removing the header.
++			shouldClose = shouldClose || resp.Close || resp.Header.Get("Connection") == "close"
+ 		}()
+ 	}
+ }

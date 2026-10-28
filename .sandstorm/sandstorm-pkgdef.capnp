@@ -47,7 +47,7 @@ const pkgdef :Spk.PackageDefinition = (
     "opt/app/build/runtime-version", "opt/app/build/schema-version",
     "opt/app/build/wallabag-cache", "opt/app/build/library-seed.sqlite", "opt/app/integration",
     "opt/app/.sandstorm/launcher.sh", "etc/php/8.2", "etc/nginx/mime.types",
-    "etc/nginx/fastcgi_params", "usr/lib/php", "usr/share/php8.2-common",
+    "etc/ssl/certs/ca-certificates.crt", "etc/nginx/fastcgi_params", "usr/lib/php", "usr/share/php8.2-common",
     "usr/bin/redis-server", "usr/bin/redis-cli", "opt/app/build/import-notify",
     "usr/lib/x86_64-linux-gnu/libatomic.so.1", "usr/lib/x86_64-linux-gnu/libjemalloc.so.2",
     "usr/lib/x86_64-linux-gnu/liblzf.so.1",

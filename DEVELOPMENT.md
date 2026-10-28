@@ -61,6 +61,24 @@ update an existing Lima instance.
   HTTPS certificate is trusted only inside this grain; upstream TLS remains the
   responsibility of Sandstorm's HTTP capability provider. Grants require the
   requesting user's `access` permission.
+- Optional **Import → Connect IpNetwork** requests an unencrypted `IpNetwork` through
+  Powerbox and saves it with the same `access` requirement. `integration/proxy-network.go`
+  restores that capability for each HTTP request, resolves DNS through it, and tunnels
+  TCP using Cap'n Proto streams. HTTPS verifies upstream certificates against the
+  packaged system CA bundle. There is no direct socket/DNS fallback. Disconnect drops
+  the durable token and closes active RPC connections; per-site grants are untouched.
+  A revoked or unavailable saved grant fails requests until disconnected or replaced.
+  Run `bash tests/proxy-startup.sh` in the VM for transport, revocation, TLS, permission,
+  and startup certificate tests. The opt-in auto-disconnect setting is persisted
+  beside the grant. After all queues drain and publishers finish, the worker calls
+  a loopback-only completion endpoint before releasing its wake lock. Revocation
+  failures retain the active marker and retry, including after restart. Pausing
+  does not revoke; finishing a batch with unsuccessful entries does.
+  `tests/network.cjs` exercises the real Powerbox grant, HTTPS article fetch, restart,
+  manual disconnect, automatic revocation after a background import, and restored
+  per-site prompts.
+  Run it with the smoke test's environment variables against a fresh disposable
+  grain, using a server administrator's browser state.
 - Graby's local DNS-based SSRF preflight is removed in this package: local DNS
   is unavailable in a grain. Its client is explicitly injected and sends all
   requests through the capability proxy, where Sandstorm enforces network grants.
@@ -129,7 +147,8 @@ already-local images are reused. A deleted unfinished entry is not recreated.
 
 Failed entries remain available under **Import → Retry unsuccessful entries**.
 Each entry has a five-minute execution limit, including time spent waiting for
-website permissions. Keep the library open to grant access to new sites; previously
+website permissions. Optionally authorize IpNetwork in **Import → Connect IpNetwork**
+before importing. Otherwise, keep the library open to grant access to new sites; previously
 granted sites work in the background. Reopening a grain resumes pending work after
 a server restart. Images that cannot be fetched may retain external URLs in storage,
 but the app CSP blocks remote images and media when viewing saved articles.
@@ -217,6 +236,13 @@ handling. The bridge supplies the external scheme; nginx passes it to PHP as
 `HTTPS`. Without that mapping, Symfony temporarily trusting loopback during
 inline form rendering changes the CSRF namespace on HTTPS installations, so
 tokens from the navigation form fail validation on submission.
+
+Run `python3 tests/redirect-origin.py` in the build VM to verify that nginx and
+PHP-FPM preserve the external host and port in Symfony redirects. Debian's
+FastCGI defaults strip the port; override them with the Host supplied by the
+Sandstorm bridge so canonical-path redirects remain on the grain's origin.
+`tests/deep-links.cjs` checks direct import links in Chromium, including query
+strings and fragments, using `GRAIN_URL` and `SANDSTORM_STORAGE_STATE`.
 
 `tests/smoke.cjs` uses Playwright (tested with 1.63.0) and Chromium. Install
 Playwright in your test environment, or set `NODE_PATH` to an existing installation.

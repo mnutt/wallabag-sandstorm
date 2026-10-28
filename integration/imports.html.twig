@@ -7,7 +7,7 @@
     <h2 id="import-status-heading">{% if paused %}Imports are paused{% elseif active %}Importing{% elseif counts.failed %}Import needs attention{% else %}No imports running{% endif %}</h2>
     <p class="import-status-counts"><span data-import-count="queued"><strong>{{ counts.queued }}</strong> queued</span>, <span data-import-count="processing"><strong>{{ counts.processing }}</strong> in progress</span>, <span data-import-count="failed"><strong>{{ counts.failed }}</strong> need attention</span></p>
     {% if counts.failed %}<p class="import-status-summary">Unsuccessful entries are saved. Retry when you're ready.</p>
-    {% elseif active and not paused %}<p class="import-status-summary">Keep this tab open for website approvals.</p>{% endif %}
+    {% elseif active and not paused %}<p class="import-status-summary">Keep this tab open for website approvals, or connect IpNetwork for unrestricted internet access.</p>{% endif %}
     <div class="import-status-footer">
         <form method="post" action="{{ path('sandstorm_imports') }}">
             <input type="hidden" name="_token" value="{{ csrf_token('sandstorm_imports') }}">

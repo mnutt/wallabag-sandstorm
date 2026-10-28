@@ -1,0 +1,54 @@
+# Target: pinned proxy source in upstream.lock.
+# Purpose: Quiet routine Powerbox connection chatter and expected browser closes.
+# Unexpected read errors and failed sends remain visible.
+--- a/pb-request.go
++++ b/pb-request.go
+@@ -55,7 +55,6 @@
+ 	wsConn *websocket.Conn,
+ 	sessionId string,
+ ) {
+-	log.Print("Called Connect()")
+ 	pr.addConn <- &powerboxConn{
+ 		ctx:       ctx,
+ 		cancel:    cancel,
+@@ -73,7 +72,6 @@
+ 	label string,
+ 	descr []powerbox.PowerboxDescriptor,
+ ) (*PowerboxResult, error) {
+-	log.Print("Called Request()")
+ 	query := make([]string, len(descr))
+ 	for i, v := range descr {
+ 		// Make sure this is the root of the message:
+@@ -135,7 +133,6 @@
+ 			index := nextConnIndex
+ 			nextConnIndex++
+ 			conns[index] = newConn
+-			log.Printf("New connection (#%v)", index)
+ 			go func() {
+ 				recvMsgs(newConn, pbReplies)
+ 				dropConnCh <- index
+@@ -147,7 +144,6 @@
+ 				}
+ 			}
+ 		case index := <-dropConnCh:
+-			log.Printf("Connection #%v closed", index)
+ 			conn, ok := conns[index]
+ 			if !ok {
+ 				return
+@@ -189,13 +185,13 @@
+ }
+ 
+ func recvMsgs(conn *powerboxConn, dest chan *pbPostMsgResp) {
+-	log.Print("Receiving pb messages.")
+-	defer log.Print("ceasing to receive pb messages")
+ 	for conn.ctx.Err() == nil {
+ 		resp := &pbPostMsgResp{}
+ 		err := conn.wsConn.ReadJSON(resp)
+ 		if err != nil {
+-			log.Print("Reading from websocket: ", err)
++			if conn.ctx.Err() == nil && !websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
++				log.Print("Reading from websocket: ", err)
++			}
+ 			return
+ 		}
+ 		resp.sessionId = conn.sessionId

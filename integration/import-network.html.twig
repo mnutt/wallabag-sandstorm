@@ -1,0 +1,15 @@
+<aside class="sandstorm-import-network" aria-labelledby="import-network-heading">
+    <h2 id="import-network-heading">Internet access</h2>
+    <p>Give this grain unrestricted internet access without approving each website. Disconnect after importing, or enable automatic disconnection.</p>
+    <div class="import-network-controls">
+        <button id="network-authorize" class="btn" disabled>Connect IpNetwork</button>
+        <button id="network-disconnect" class="btn" style="display: none" hidden disabled>Disconnect IpNetwork</button>
+        <div class="import-network-automatic">
+        <input type="checkbox" id="network-auto-disconnect">
+        <label for="network-auto-disconnect">Disconnect when import finishes</label>
+        </div>
+    </div>
+    <p class="import-network-help">Connecting normally requires a Sandstorm server administrator.</p>
+    <p id="network-status" role="status">Loading network settings…</p>
+</aside>
+<script src="{{ asset('sandstorm-network.js') }}"></script>

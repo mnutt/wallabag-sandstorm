@@ -1,0 +1,23 @@
+# Target: pinned wallabag in upstream.lock.
+# Purpose: Place internet access beside the complete import page.
+--- a/src/Wallabag/ImportBundle/Resources/views/Import/index.html.twig
++++ b/src/Wallabag/ImportBundle/Resources/views/Import/index.html.twig
+@@ -11,7 +11,8 @@
+ {% block content %}
+ <div class="row">
+     <div class="col s12">
+-        <div class="card-panel settings">
++        <div class="card-panel settings sandstorm-import-layout">
++            <div class="sandstorm-import-main">
+             {% include '@WallabagImport/Import/_information.html.twig' %}
+ 
+             {{ 'import.page_description'|trans }}
+@@ -24,6 +25,8 @@
+                     </li>
+                 {% endfor %}
+             </ul>
++            </div>
++            {% include '@WallabagCore/Sandstorm/import-network.html.twig' %}
+         </div>
+     </div>
+ </div>
