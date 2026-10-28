@@ -475,3 +475,24 @@ For upstream upgrades or behavior changes, also rebuild and run the grain/browse
 tests named in the patch headers: a clean patch application cannot detect an
 upstream API or security-semantics change. Vendor cache/client edits and the
 Wallabagger authentication/capture integration deserve particular attention.
+
+## Continuous integration
+
+GitHub Actions runs `.github/workflows/ci.yml` on pushes, pull requests, and manual
+requests. Its Debian 12 container builds the pinned wallabag distribution and both
+browser extensions, checks every patch, and runs proxy, import, extraction, image,
+CSRF, theme, and nginx regression tests. Downloads are verified against the lock
+files. The workflow needs no repository secrets and uses a read-only GitHub token.
+
+To reproduce CI in a disposable Docker environment:
+
+```sh
+docker build --pull -f ci/Dockerfile --build-arg CI_UID="$(id -u)" --build-arg CI_GID="$(id -g)" -t wallabag-ci .
+docker run --rm --init -v "$PWD:/opt/app" wallabag-ci
+```
+
+This replaces generated `build/` and `dist/` outputs, so stop any local dev session
+first. In a provisioned build VM with Node installed, `bash ci/check.sh --tests-only`
+runs the same checks against an existing build. Browser tests needing an active
+Sandstorm server and fresh/upgrade grain lifecycle checks remain manual; CI does
+not sign or publish Sandstorm packages.

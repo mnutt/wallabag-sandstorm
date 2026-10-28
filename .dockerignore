@@ -1,0 +1,9 @@
+.git
+.agents
+.aws
+.codex
+.claude
+.sandstorm/caches
+build
+dist
+*.spk
