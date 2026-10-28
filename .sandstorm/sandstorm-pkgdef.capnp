@@ -4,8 +4,8 @@ const pkgdef :Spk.PackageDefinition = (
   id = "gvqr0x3nx6mwh3f1x8u7xt7m63ymajakc36nq2fw99770488q6u0",
   manifest = (
     appTitle = (defaultText = "wallabag"),
-    appVersion = 4,
-    appMarketingVersion = (defaultText = "2.6.14-sandstorm.4"),
+    appVersion = 5,
+    appMarketingVersion = (defaultText = "2.6.15-sandstorm.1"),
     minUpgradableAppVersion = 0,
     actions = [(nounPhrase = (defaultText = "reading library"),
       description = (defaultText = "Create an independent library of saved articles."),

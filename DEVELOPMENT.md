@@ -4,7 +4,7 @@ Build, integration, packaging, and testing notes for contributors. See
 [README.md](README.md) for the project overview and basic usage.
 
 A Sandstorm packaging repository for wallabag. The build downloads the prepared
-wallabag 2.6.14 distribution and the outbound HTTP adapter at the versions and
+wallabag 2.6.15 distribution and the outbound HTTP adapter at the versions and
 SHA-256 checksums recorded in `upstream.lock`. Upstream files and binaries are
 build outputs, not vendored source. Sandstorm changes live in `integration/` and
 small, ordered patches in `patches/`.

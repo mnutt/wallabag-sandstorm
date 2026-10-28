@@ -56,17 +56,17 @@
                  'error_msg' => $e->getMessage(),
 --- a/src/Wallabag/CoreBundle/Helper/ContentProxy.php
 +++ b/src/Wallabag/CoreBundle/Helper/ContentProxy.php
-@@ -56,6 +56,10 @@
+@@ -65,6 +65,10 @@
  
-         if ((empty($content) || false === $this->validateContent($content)) && false === $disableContentUpdate) {
-             $fetchedContent = $this->graby->fetchContent($url);
+                 return $value;
+             }, \ARRAY_FILTER_USE_BOTH);
 +            if (getenv('SANDSTORM_IMPORT_WORKER') === '1' && $fetchedContent['html'] === $this->fetchingErrorMessage) {
 +                // Preserve the queued entry for retry after a missing grant or fetch error.
 +                throw new \RuntimeException('Imported article could not be fetched.');
 +            }
  
-             $fetchedContent['title'] = $this->sanitizeContentTitle(
-                 $fetchedContent['title'],
+             $title = $content['title'] ?? $fetchedContent['title'] ?? null;
+             if ($title) {
 --- a/src/Wallabag/ImportBundle/Resources/views/Import/_information.html.twig
 +++ b/src/Wallabag/ImportBundle/Resources/views/Import/_information.html.twig
 @@ -1,15 +1,9 @@

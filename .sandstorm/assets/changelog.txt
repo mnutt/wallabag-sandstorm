@@ -1,3 +1,8 @@
+# 2.6.15-sandstorm.1
+
+- Update wallabag to 2.6.15, including upstream extraction, dependency, and ePub export fixes.
+- Retain Sandstorm import, networking, and article-formatting integrations.
+
 # 2.6.14-sandstorm.4
 
 - Add persistent Redis-backed imports with Sandstorm wake locks, completion activity, and pause/retry controls.

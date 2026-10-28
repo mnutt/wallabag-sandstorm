@@ -71,6 +71,6 @@
 +        }
 +    }
 +
-     private function makeAbsolute($base, \DOMElement $elem)
+     private function makeAbsolute($base, \DOMElement $elem): void
      {
          foreach (['a' => 'href', 'img' => 'src', 'iframe' => 'src'] as $tag => $attr) {

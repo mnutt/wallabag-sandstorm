@@ -39,12 +39,12 @@
              return false;
 --- a/src/Wallabag/CoreBundle/Helper/ContentProxy.php
 +++ b/src/Wallabag/CoreBundle/Helper/ContentProxy.php
-@@ -58,7 +58,7 @@
-             $fetchedContent = $this->graby->fetchContent($url);
+@@ -67,7 +67,7 @@
+             }, \ARRAY_FILTER_USE_BOTH);
              if (getenv('SANDSTORM_IMPORT_WORKER') === '1' && $fetchedContent['html'] === $this->fetchingErrorMessage) {
                  // Preserve the queued entry for retry after a missing grant or fetch error.
 -                throw new \RuntimeException('Imported article could not be fetched.');
 +                throw new \RuntimeException('Article extraction failed (HTTP ' . ($fetchedContent['status'] ?? 'unknown') . ').');
              }
  
-             $fetchedContent['title'] = $this->sanitizeContentTitle(
+             $title = $content['title'] ?? $fetchedContent['title'] ?? null;
