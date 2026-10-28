@@ -8,6 +8,10 @@ set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y nginx php-fpm php-sqlite3 php-cli php-curl git php-dev php-xml php-mbstring php-gd php-intl php-tidy php-zip ca-certificates unzip python3 golang-go sqlite3 redis-server
+# Apply PHP's session-upload mitigation to both packaged SAPIs.
+for sapi in cli fpm; do
+    install -m 0644 /opt/app/integration/php-security.ini "/etc/php/8.2/$sapi/conf.d/99-wallabag-security.ini"
+done
 service redis-server stop
 systemctl disable redis-server
 service nginx stop
