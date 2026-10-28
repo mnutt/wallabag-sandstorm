@@ -1,0 +1,26 @@
+# Target: pinned wallabag in upstream.lock.
+# Purpose: Report placeholder-only interactive saves/reloads as extraction failures, not successes.
+# Validation: tests/extraction-status.php.
+--- a/src/Wallabag/CoreBundle/Controller/EntryController.php
++++ b/src/Wallabag/CoreBundle/Controller/EntryController.php
+@@ -416,8 +416,6 @@
+ 
+         // if refreshing entry failed, don't save it
+         if ($this->getParameter('wallabag_core.fetching_error_message') === $entry->getContent()) {
+-            $this->addFlash('notice', 'flashes.entry.notice.entry_reloaded_failed');
+-
+             return $this->redirect($this->generateUrl('view', ['id' => $entry->getId()]));
+         }
+ 
+@@ -718,6 +716,11 @@
+ 
+         try {
+             $this->contentProxy->updateEntry($entry, $entry->getUrl());
++            // Graby also reports extraction failure by returning its placeholder.
++            // Saving the URL alone must not be presented as fetching the article.
++            if ($entry->getContent() === $this->getParameter('wallabag_core.fetching_error_message')) {
++                $message .= '_failed';
++            }
+         } catch (\Exception $e) {
+             // $this->logger->error('Error while saving an entry', [
+             //     'exception' => $e,
